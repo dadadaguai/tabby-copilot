@@ -2,6 +2,13 @@
 
 所有显著变更都记录于此。版本规则：小功能 `0.0.x` 递增，功能累积升级 `0.x.0`。
 
+## v0.0.6 — 2026-11-23
+
+- 补齐工具集：`send_keys`（回答 `[Y/n]`/`ctrl-c`）、`wait_for_output`（等长任务）、`ask_user`（向你提问）、`focus_terminal`（聚焦终端）。
+- 提问 UI：工具卡片展示问题 + 选项按钮 + 自由文本回答。
+- Agent 支持 `awaiting_user` 状态与 `answer()`。
+- 单测：translateKeys（2 例）。
+
 ## v0.0.5 — 2026-11-23
 
 - `run_command` 状态机：8 种退出态（prompt / awaiting_input / alt_screen / idle / timeout / reset / cancelled / matched）。

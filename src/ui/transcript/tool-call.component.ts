@@ -11,6 +11,7 @@ import { AgentPhase, AgentService } from '../../core/agent.service'
 export class ToolCallComponent implements OnInit, OnDestroy {
     @Input() call!: ToolCallRecord
     expanded = false
+    answerText = ''
     phase: AgentPhase = 'idle'
     private sub = new Subscription()
 
@@ -31,6 +32,7 @@ export class ToolCallComponent implements OnInit, OnDestroy {
             case 'send_keys': return '发送按键'
             case 'wait_for_output': return '等待输出'
             case 'ask_user': return '向你提问'
+            case 'focus_terminal': return '聚焦终端'
             default: return this.call.name
         }
     }
@@ -55,6 +57,7 @@ export class ToolCallComponent implements OnInit, OnDestroy {
     get statusLabel (): string {
         switch (this.call.status) {
             case 'pending_approval': return '待批准'
+            case 'awaiting_user': return '等你回答'
             case 'running': return '执行中'
             case 'done': return '完成'
             case 'declined': return '已拒绝'
@@ -72,7 +75,15 @@ export class ToolCallComponent implements OnInit, OnDestroy {
     }
 
     get bodyVisible (): boolean {
-        return this.expanded || this.call.status === 'pending_approval' || this.call.status === 'running'
+        return this.expanded || this.call.status === 'pending_approval' || this.call.status === 'running' || this.call.status === 'awaiting_user'
+    }
+
+    get question (): string {
+        return this.call.question ?? ''
+    }
+
+    get choices (): string[] {
+        return this.call.choices ?? []
     }
 
     approve (): void {
@@ -81,5 +92,18 @@ export class ToolCallComponent implements OnInit, OnDestroy {
 
     deny (): void {
         this.agent.deny(this.call.id)
+    }
+
+    pickChoice (choice: string): void {
+        this.agent.answer(this.call.id, choice)
+    }
+
+    submitAnswer (): void {
+        const text = this.answerText.trim()
+        if (!text) {
+            return
+        }
+        this.answerText = ''
+        this.agent.answer(this.call.id, text)
     }
 }

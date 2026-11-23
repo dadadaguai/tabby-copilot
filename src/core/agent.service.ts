@@ -15,7 +15,7 @@ import { newId, nowIso } from './util/ids'
 import { buildMessages } from './prompt-builder'
 import systemPromptTemplate from '../prompts/system.md'
 
-export type AgentPhase = 'idle' | 'thinking' | 'tool' | 'awaiting_approval'
+export type AgentPhase = 'idle' | 'thinking' | 'tool' | 'awaiting_approval' | 'awaiting_user'
 
 export interface AgentState {
     messages: SessionMessage[]
@@ -37,6 +37,7 @@ export class AgentService {
     private abortController: AbortController | null = null
     private turnPromise: Promise<void> | null = null
     private pendingApprovals = new Map<string, (approved: boolean) => void>()
+    private pendingQuestion: { toolCallId: string, resolve: (answer: string) => void } | null = null
     private runner: TerminalRunner
     private turnTerminal: TerminalEntry | null = null
     private emitTimer: any = null
@@ -127,6 +128,15 @@ export class AgentService {
         resolve(false)
     }
 
+    answer (toolCallId: string, text: string): void {
+        if (!this.pendingQuestion || this.pendingQuestion.toolCallId !== toolCallId) {
+            return
+        }
+        const q = this.pendingQuestion
+        this.pendingQuestion = null
+        q.resolve(text)
+    }
+
     private makeProvider (): ChatProvider {
         const s = this.settings
         let extra: Record<string, any> = {}
@@ -206,6 +216,7 @@ export class AgentService {
                 }
             }
             this.abortController = null
+            this.pendingQuestion = null
             this.turnTerminal = null
             this.setPhase('idle')
             this.touch()
@@ -355,13 +366,33 @@ export class AgentService {
                 return t
             },
             readLast: (entry, n) => this.registry.captureLast(entry, n),
+            mark: entry => this.registry.mark(entry),
             isAlternateScreen: entry => this.registry.isAlternateScreen(entry),
+            focus: entry => this.registry.focus(entry),
             progress: text => {
                 record.progress = text
                 this.emitSoon()
             },
             setExitState: state => {
                 record.exitState = state as RunExitState
+            },
+            askUser: (question, choices) => {
+                record.question = question
+                record.choices = choices
+                record.status = 'awaiting_user'
+                this.setPhase('awaiting_user')
+                this.touch()
+                return new Promise<string>((resolve, reject) => {
+                    this.pendingQuestion = {
+                        toolCallId: record.id,
+                        resolve: answer => {
+                            record.answer = answer
+                            this.setPhase('tool')
+                            resolve(answer)
+                        },
+                    }
+                    signal.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' })), { once: true })
+                })
             },
         }
     }

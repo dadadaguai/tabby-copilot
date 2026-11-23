@@ -87,6 +87,40 @@
             color: var(--copilot-danger);
         }
 
+        .tc-question {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+
+            .q-text { font-size: .9em; }
+            .q-choices { display: flex; gap: 6px; flex-wrap: wrap; }
+
+            .btn.choice {
+                background: var(--copilot-surface-2);
+                color: inherit;
+                border: 1px solid var(--copilot-border);
+            }
+
+            .q-input {
+                display: flex;
+                gap: 6px;
+
+                input {
+                    flex: 1;
+                    min-width: 0;
+                    background: var(--copilot-surface);
+                    color: inherit;
+                    border: 1px solid var(--copilot-border);
+                    border-radius: 6px;
+                    padding: 5px 8px;
+                    font: inherit;
+                    font-size: .88em;
+
+                    &:focus { outline: none; border-color: var(--copilot-accent); }
+                }
+            }
+        }
+
         .tc-output {
             pre {
                 margin: 0;

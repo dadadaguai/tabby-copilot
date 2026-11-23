@@ -1,6 +1,6 @@
 export type RiskLevel = 'low' | 'medium' | 'high'
 export type ApprovalMode = 'ask' | 'auto_low' | 'auto_medium' | 'auto_all'
-export type ToolCallStatus = 'pending_approval' | 'running' | 'done' | 'declined' | 'error' | 'cancelled'
+export type ToolCallStatus = 'pending_approval' | 'awaiting_user' | 'running' | 'done' | 'declined' | 'error' | 'cancelled'
 export type RunExitState = 'prompt' | 'awaiting_input' | 'alt_screen' | 'idle' | 'timeout' | 'matched' | 'reset' | 'cancelled'
 
 export interface ToolCallRecord {
@@ -17,6 +17,10 @@ export interface ToolCallRecord {
     exitState?: RunExitState
     startedAt?: string
     finishedAt?: string
+    /** Free-text question / choices for ask_user. */
+    question?: string
+    choices?: string[]
+    answer?: string
 }
 
 export interface UserMessage {

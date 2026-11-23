@@ -1,7 +1,7 @@
 import { AgentTool, ApprovalRequirement } from './types'
-import { assessCommand } from '../util/risk'
+import { assessCommand, maxRisk, normalizeRisk } from '../util/risk'
 import { countLines, formatDuration } from '../util/text'
-import { RunResult } from '../terminal-runner'
+import { RunResult, translateKeys } from '../terminal-runner'
 import { RunExitState } from '../../types/session'
 
 function str (v: unknown): string {
@@ -28,19 +28,23 @@ export function describeRunResult (label: string, r: RunResult, cmdTimeoutS?: nu
             break
         case 'awaiting_input':
             header = `WAITING FOR INPUT after ${dur} – last line: ${JSON.stringify(r.lastLine.trim())}`
-            hint = 'The program is waiting for input. Tell the user to answer it, or use a more specific command.'
+            hint = 'The program is waiting. Answer with send_keys (e.g. keys ["y","enter"]), or use ask_user if the user must decide (passwords must be typed by the user: ask them to type it, then wait_for_output).'
             break
         case 'alt_screen':
             header = 'a full-screen program is active (vim/less/htop/…) – showing the screen'
+            hint = 'Interact with send_keys (e.g. "q", ":q", "ctrl-c"), or wait_for_output.'
             break
         case 'idle':
             header = `no new output for a while and no prompt after ${dur} – the command may still be running or waiting silently`
+            hint = 'Use wait_for_output to keep waiting, read_terminal to look again, or send_keys "ctrl-c" to abort.'
             break
         case 'timeout':
             header = `still running after ${cmdTimeoutS ?? Math.round(r.durationMs / 1000)}s – no prompt yet`
+            hint = 'Use wait_for_output with a longer timeout to keep waiting, or send_keys "ctrl-c" to abort.'
             break
         case 'reset':
             header = 'the terminal was reset or reconnected while waiting – the command may not have run'
+            hint = 'Check the current state with read_terminal, then run the command again if needed.'
             break
         case 'cancelled':
             header = 'cancelled by the user'
@@ -73,6 +77,7 @@ export const readTerminalTool: AgentTool = {
         const t = ctx.getTerminal()
         const n = Math.max(1, Math.min(400, Math.floor(num(args.lines, 60))))
         const capture = ctx.readLast(t, n)
+        t.readMarker = ctx.mark(t)
         const body = capture.lines.join('\n').trimEnd()
         const screenNote = capture.isAlternate ? ' · full-screen program active' : ''
         return `[${t.label} · last ${capture.lines.length} lines${screenNote}]\n${body || '(empty)'}`
@@ -128,7 +133,155 @@ export const runCommandTool: AgentTool = {
     },
 }
 
-export const ALL_TOOLS: AgentTool[] = [readTerminalTool, runCommandTool]
+export const sendKeysTool: AgentTool = {
+    spec: {
+        name: 'send_keys',
+        description: 'Send keystrokes to the terminal without a trailing Enter (unless you include "enter"). Use it to answer prompts (y/n), drive full-screen programs, or interrupt with ctrl-c. Never use it to type passwords – ask the user to type those.',
+        parameters: {
+            type: 'object',
+            properties: {
+                keys: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'Sequence of keys. Plain text is typed literally; special names: enter, tab, esc, space, backspace, up, down, left, right, ctrl-c, ctrl-d, ctrl-z, ctrl-l. Example: ["y", "enter"].',
+                },
+                explanation: { type: 'string', description: 'Why these keys are being sent.' },
+                risk_level: { type: 'string', enum: ['low', 'medium', 'high'], description: 'Risk of what these keys will cause (confirming a destructive prompt is high).' },
+                timeout_seconds: { type: 'integer', description: 'How long to wait for the terminal to settle afterwards (default 15).' },
+            },
+            required: ['keys', 'explanation'],
+            additionalProperties: false,
+        },
+    },
+    approval (args): ApprovalRequirement {
+        const keys: string[] = Array.isArray(args.keys) ? args.keys.map(str) : []
+        const benign = keys.every(k => /^(ctrl-c|ctrl-l|esc|escape|enter|q|space|up|down|left|right|pageup|pagedown|home|end)$/i.test(k.trim()))
+        const claimed = normalizeRisk(args.risk_level ?? (benign ? 'low' : 'medium'))
+        return { level: benign ? claimed : maxRisk(claimed, 'medium'), hardBlock: false }
+    },
+    async execute (args, ctx) {
+        const keys: string[] = Array.isArray(args.keys) ? args.keys.map(str) : [str(args.keys)]
+        if (!keys.length) {
+            throw new Error('keys must not be empty')
+        }
+        const data = keys.map(k => {
+            try {
+                return translateKeys(k)
+            } catch {
+                return k   // literal text
+            }
+        }).join('')
+        const t = ctx.getTerminal()
+        const timeoutS = Math.max(1, Math.min(600, num(args.timeout_seconds, 15)))
+        const prevBusy = t.busyWith
+        t.busyWith = ctx.toolCallId
+        try {
+            const result = await ctx.runner.sendKeys(t, data, {
+                timeoutMs: timeoutS * 1000,
+                signal: ctx.signal,
+                onProgress: text => ctx.progress(text),
+            })
+            t.readMarker = result.end
+            ctx.setExitState(result.state as RunExitState)
+            return describeRunResult(t.label, result, timeoutS)
+        } finally {
+            t.busyWith = prevBusy && prevBusy !== ctx.toolCallId ? prevBusy : null
+        }
+    },
+}
+
+export const waitForOutputTool: AgentTool = {
+    spec: {
+        name: 'wait_for_output',
+        description: 'Keep waiting on a terminal where a command is still running (after a timeout/idle result), or wait for the user to finish typing something. Returns the output produced since the last read.',
+        parameters: {
+            type: 'object',
+            properties: {
+                timeout_seconds: { type: 'integer', description: 'Maximum time to wait (default 60).' },
+                until_regex: { type: 'string', description: 'Optional regular expression; return as soon as the new output matches it.' },
+            },
+            additionalProperties: false,
+        },
+    },
+    approval: () => null,
+    async execute (args, ctx) {
+        const t = ctx.getTerminal()
+        const timeoutS = Math.max(1, Math.min(3600, num(args.timeout_seconds, 60)))
+        let regex: RegExp | null = null
+        if (args.until_regex) {
+            try {
+                regex = new RegExp(str(args.until_regex), 'm')
+            } catch (e) {
+                throw new Error(`until_regex is not a valid regular expression: ${(e as Error).message}`)
+            }
+        }
+        const wasBusy = t.busyWith
+        t.busyWith = ctx.toolCallId
+        try {
+            const result = await ctx.runner.waitForOutput(t, t.readMarker, {
+                timeoutMs: timeoutS * 1000,
+                signal: ctx.signal,
+                untilRegex: regex,
+                onProgress: text => ctx.progress(text),
+                idleMs: Math.min(timeoutS * 1000, 20_000),
+            })
+            t.readMarker = result.end
+            ctx.setExitState(result.state as RunExitState)
+            return describeRunResult(t.label, result, timeoutS)
+        } finally {
+            t.busyWith = wasBusy && wasBusy !== ctx.toolCallId ? wasBusy : null
+        }
+    },
+}
+
+export const askUserTool: AgentTool = {
+    spec: {
+        name: 'ask_user',
+        description: 'Ask the user a question in the panel and wait for the answer. Use it for missing information or decisions with real consequences.',
+        parameters: {
+            type: 'object',
+            properties: {
+                question: { type: 'string', description: 'The question, phrased so it can be answered briefly.' },
+                choices: { type: 'array', items: { type: 'string' }, description: 'Optional fixed options shown as buttons.' },
+            },
+            required: ['question'],
+            additionalProperties: false,
+        },
+    },
+    approval: () => null,
+    async execute (args, ctx) {
+        const question = str(args.question).trim()
+        if (!question) {
+            throw new Error('question must not be empty')
+        }
+        const choices = Array.isArray(args.choices) ? args.choices.map(str).filter(Boolean) : undefined
+        const answer = await ctx.askUser(question, choices?.length ? choices : undefined)
+        return `User answered: ${answer}`
+    },
+}
+
+export const focusTerminalTool: AgentTool = {
+    spec: {
+        name: 'focus_terminal',
+        description: 'Switch the user\'s view to the terminal (for example to let them type a password or watch something).',
+        parameters: { type: 'object', properties: {}, additionalProperties: false },
+    },
+    approval: () => null,
+    async execute (_args, ctx) {
+        const t = ctx.getTerminal()
+        ctx.focus(t)
+        return `Focused "${t.label}".`
+    },
+}
+
+export const ALL_TOOLS: AgentTool[] = [
+    readTerminalTool,
+    runCommandTool,
+    sendKeysTool,
+    waitForOutputTool,
+    askUserTool,
+    focusTerminalTool,
+]
 
 export function findTool (name: string): AgentTool | undefined {
     return ALL_TOOLS.find(t => t.spec.name === name)

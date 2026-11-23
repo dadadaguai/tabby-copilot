@@ -1,4 +1,4 @@
-import { BufferCapture, TerminalEntry } from '../terminal-registry.service'
+import { BufferCapture, BufferPosition, TerminalEntry } from '../terminal-registry.service'
 import { TerminalRunner } from '../terminal-runner'
 import { RiskLevel, RunExitState } from '../../types/session'
 
@@ -16,9 +16,12 @@ export interface ToolContext {
     defaultTimeoutSeconds: number
     getTerminal (): TerminalEntry
     readLast (entry: TerminalEntry, n: number): BufferCapture
+    mark (entry: TerminalEntry): BufferPosition
     isAlternateScreen (entry: TerminalEntry): boolean
+    focus (entry: TerminalEntry): void
     progress (text: string): void
     setExitState (state: RunExitState): void
+    askUser (question: string, choices?: string[]): Promise<string>
 }
 
 export interface AgentTool {

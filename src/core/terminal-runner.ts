@@ -59,6 +59,16 @@ export class TerminalRunner {
         return this.observe(entry, { ...options, start, seqAtStart, command, terminator })
     }
 
+    /** Send raw keystrokes (already translated) and report what happened next. */
+    async sendKeys (entry: TerminalEntry, data: string, options: ObserveOptions): Promise<RunResult> {
+        const start = this.host.mark(entry)
+        const terminator = learnPromptTerminator(this.host.cursorLine(entry))
+        const seqAtStart = entry.outputSeq
+        this.host.sendInput(entry, data)
+        // keystrokes are usually answers to prompts: settle quickly
+        return this.observe(entry, { quietMs: 600, idleMs: 2500, ...options, start, seqAtStart, command: null, terminator })
+    }
+
     /** Wait for new output after `from` without sending anything. */
     async waitForOutput (entry: TerminalEntry, from: BufferPosition, options: ObserveOptions): Promise<RunResult> {
         const terminator = learnPromptTerminator(this.host.cursorLine(entry))
@@ -201,4 +211,34 @@ export function sleep (ms: number, signal?: AbortSignal): Promise<void> {
         }
         signal?.addEventListener('abort', onAbort, { once: true })
     })
+}
+
+/** Translate friendly key names into terminal bytes. */
+export function translateKeys (spec: string): string {
+    const map: Record<string, string> = {
+        'enter': '\r', 'return': '\r', 'cr': '\r',
+        'tab': '\t',
+        'esc': '\x1b', 'escape': '\x1b',
+        'space': ' ',
+        'backspace': '\x7f',
+        'up': '\x1b[A', 'down': '\x1b[B', 'right': '\x1b[C', 'left': '\x1b[D',
+        'home': '\x1b[H', 'end': '\x1b[F',
+        'pageup': '\x1b[5~', 'pagedown': '\x1b[6~',
+        'delete': '\x1b[3~',
+        'f1': '\x1bOP', 'f2': '\x1bOQ', 'f3': '\x1bOR', 'f4': '\x1bOS',
+    }
+    const key = spec.trim().toLowerCase()
+    if (map[key] !== undefined) {
+        return map[key]
+    }
+    const ctrl = /^(ctrl|c|control|\^)[-+]?([a-z\[\]\\^_@])$/.exec(key)
+    if (ctrl) {
+        const ch = ctrl[2].toUpperCase()
+        return String.fromCharCode(ch.charCodeAt(0) & 0x1f)
+    }
+    const alt = /^(alt|meta|m)[-+]([a-z0-9])$/.exec(key)
+    if (alt) {
+        return `\x1b${alt[2]}`
+    }
+    throw new Error(`Unknown key "${spec}". Use names like enter, tab, esc, ctrl-c, ctrl-d, up, down.`)
 }

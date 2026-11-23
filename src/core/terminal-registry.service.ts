@@ -266,6 +266,19 @@ export class TerminalRegistryService {
         this.zone.run(() => entry.tab.sendInput(data))
     }
 
+    /** Switch to the tab and give it keyboard focus. */
+    focus (entry: TerminalEntry): void {
+        const top = (entry.tab as any).topmostParent ?? entry.tab
+        this.zone.run(() => {
+            this.app.selectTab(top)
+            const parent = entry.tab.parent
+            if (parent instanceof SplitTabComponent) {
+                parent.focus(entry.tab)
+            }
+            ;(entry.tab.frontend as any)?.focus?.()
+        })
+    }
+
     // ---- buffer access -------------------------------------------------
 
     xterm (entry: TerminalEntry): XtermLike | null {

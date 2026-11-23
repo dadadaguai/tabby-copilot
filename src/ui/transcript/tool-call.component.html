@@ -1,6 +1,13 @@
-<div class="tool-call" [class.pending]="call.status === 'pending_approval'">
+<div class="tool-call" [class.pending]="call.status === 'pending_approval' || call.status === 'awaiting_user'">
   <div class="tc-header" (click)="expanded = !expanded">
-    <i class="fas tc-icon" [class.fa-terminal]="call.name === 'run_command'" [class.fa-eye]="call.name === 'read_terminal'" [class.fa-spinner.fa-spin]="call.status === 'running'"></i>
+    <i class="fas tc-icon"
+       [class.fa-terminal]="call.name === 'run_command'"
+       [class.fa-eye]="call.name === 'read_terminal'"
+       [class.fa-keyboard]="call.name === 'send_keys'"
+       [class.fa-hourglass-half]="call.name === 'wait_for_output'"
+       [class.fa-question-circle]="call.name === 'ask_user'"
+       [class.fa-expand]="call.name === 'focus_terminal'"
+       [class.fa-spinner.fa-spin]="call.status === 'running'"></i>
     <span class="tc-title">{{ title }}</span>
     <span class="tc-risk" *ngIf="call.riskLevel"
           [class.risk-high]="call.riskLevel === 'high'"
@@ -13,6 +20,17 @@
   <div class="tc-body" *ngIf="bodyVisible">
     <div class="tc-command" *ngIf="command"><code>{{ command }}</code></div>
     <div class="tc-explanation" *ngIf="explanation">{{ explanation }}</div>
+
+    <div class="tc-question" *ngIf="question">
+      <div class="q-text">{{ question }}</div>
+      <div class="q-choices" *ngIf="choices.length">
+        <button class="btn choice" type="button" *ngFor="let c of choices" (click)="pickChoice(c)">{{ c }}</button>
+      </div>
+      <div class="q-input" *ngIf="call.status === 'awaiting_user'">
+        <input type="text" [(ngModel)]="answerText" (keydown.enter)="submitAnswer()" placeholder="输入回答…" />
+        <button class="btn approve" type="button" (click)="submitAnswer()">回答</button>
+      </div>
+    </div>
 
     <div class="tc-actions" *ngIf="call.status === 'pending_approval'">
       <button class="btn approve" type="button" (click)="approve()">批准</button>
