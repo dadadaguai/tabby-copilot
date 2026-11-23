@@ -324,7 +324,7 @@ while 任务未完成 且 轮次未超限:
 | **v0.0.4** | 终端桥接 + prompt 检测 + 缓冲读取 | 能读本 Tab 屏幕、正确识别 prompt ✅ |
 | **v0.0.5** | `run_command` 状态机 + 风险分级 + 审批 | 命令按状态机返回、风险徽章正确、可批准/拒绝 ✅ |
 | **v0.0.6** | `send_keys` / `wait_for_output` / `ask_user` / `focus_terminal` | 能回答 `[Y/n]`、等待长任务、向用户提问 ✅ |
-| **v0.0.7** | 文件读取 + 白名单（local/SFTP/exec） | `read_file`/`list_dir` 受白名单约束，本地+SSH 可读 |
+| **v0.0.7** | 文件读取 + 白名单（local/SFTP/exec） | `read_file`/`list_dir` 受白名单约束，本地+SSH 可读 ✅ |
 | **v0.0.8** | 会话持久化 + 恢复 + 上下文预算 | 会话落盘可恢复、长对话自动裁剪 |
 | **v0.1.0** | 打磨 + 全量测试（单测 + HTML 预览）+ 发布 | 单测通过、HTML 预览验收通过 |
 

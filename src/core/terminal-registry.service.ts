@@ -36,6 +36,8 @@ export interface TerminalEntry {
     tab: BaseTerminalTabComponent<any>
     label: string
     connection: string
+    /** Path prefixes this terminal's agent is allowed to read (per-tab whitelist). */
+    fileWhitelist: string[]
     /** Timestamp of the last output chunk from the session. */
     lastOutputAt: number
     /** Incremented on every output chunk – cheap change detection. */
@@ -111,6 +113,7 @@ export class TerminalRegistryService {
             tab,
             label: baseLabel(tab),
             connection: describeConnection(tab),
+            fileWhitelist: [],
             lastOutputAt: 0,
             outputSeq: 0,
             busyWith: null,

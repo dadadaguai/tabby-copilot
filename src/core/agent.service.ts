@@ -7,6 +7,7 @@ import { ChatMessage, ChatProvider, ToolSpec } from './llm/types'
 import { OpenAICompatibleProvider } from './llm/openai-compatible'
 import { TerminalRunner } from './terminal-runner'
 import { TerminalEntry, TerminalRegistryService } from './terminal-registry.service'
+import { FileService } from './file.service'
 import { ALL_TOOLS, findTool } from './tools'
 import { ToolContext } from './tools/types'
 import { isAutoApproved } from './util/risk'
@@ -54,6 +55,7 @@ export class AgentService {
         @Inject(CONFIG_ACCESSOR) private getConfig: () => CopilotConfig,
         private zone: NgZone,
         private registry: TerminalRegistryService,
+        private fileService: FileService,
     ) {
         this.runner = new TerminalRunner(registry)
     }
@@ -352,6 +354,10 @@ export class AgentService {
         }
     }
 
+    private currentTerminal (): TerminalEntry | null {
+        return this.turnTerminal && !this.turnTerminal.closed ? this.turnTerminal : this.registry.getActive()
+    }
+
     private makeToolContext (record: ToolCallRecord, signal: AbortSignal): ToolContext {
         return {
             signal,
@@ -359,7 +365,7 @@ export class AgentService {
             runner: this.runner,
             defaultTimeoutSeconds: this.settings.defaultCommandTimeout,
             getTerminal: () => {
-                const t = this.turnTerminal && !this.turnTerminal.closed ? this.turnTerminal : this.registry.getActive()
+                const t = this.currentTerminal()
                 if (!t) {
                     throw new Error('No active terminal. Open a terminal tab first.')
                 }
@@ -392,6 +398,49 @@ export class AgentService {
                         },
                     }
                     signal.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' })), { once: true })
+                })
+            },
+            isPathAllowed: path => {
+                const t = this.currentTerminal()
+                return !!t && this.fileService.isAllowed(t, path)
+            },
+            grantPath: path => {
+                const t = this.currentTerminal()
+                if (t) {
+                    this.fileService.grant(t, path)
+                }
+            },
+            readFile: (path, lines) => {
+                const t = this.currentTerminal()
+                if (!t) {
+                    throw new Error('No active terminal. Open a terminal tab first.')
+                }
+                return this.fileService.readFile(t, path, lines)
+            },
+            listDir: path => {
+                const t = this.currentTerminal()
+                if (!t) {
+                    throw new Error('No active terminal. Open a terminal tab first.')
+                }
+                return this.fileService.listDir(t, path)
+            },
+            requestApproval: message => {
+                record.status = 'pending_approval'
+                record.progress = message
+                this.setPhase('awaiting_approval')
+                this.touch()
+                return new Promise<boolean>(resolve => {
+                    this.pendingApprovals.set(record.id, approved => {
+                        this.pendingApprovals.delete(record.id)
+                        record.progress = undefined
+                        record.status = 'running'
+                        this.setPhase('tool')
+                        resolve(approved)
+                    })
+                    signal.addEventListener('abort', () => {
+                        this.pendingApprovals.delete(record.id)
+                        resolve(false)
+                    }, { once: true })
                 })
             },
         }

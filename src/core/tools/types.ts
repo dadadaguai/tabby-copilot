@@ -22,6 +22,11 @@ export interface ToolContext {
     progress (text: string): void
     setExitState (state: RunExitState): void
     askUser (question: string, choices?: string[]): Promise<string>
+    isPathAllowed (path: string): boolean
+    grantPath (path: string): void
+    readFile (path: string, lines?: number): Promise<string>
+    listDir (path: string): Promise<string>
+    requestApproval (message: string): Promise<boolean>
 }
 
 export interface AgentTool {

@@ -33,6 +33,8 @@ export class ToolCallComponent implements OnInit, OnDestroy {
             case 'wait_for_output': return '等待输出'
             case 'ask_user': return '向你提问'
             case 'focus_terminal': return '聚焦终端'
+            case 'read_file': return '读取文件'
+            case 'list_dir': return '列出目录'
             default: return this.call.name
         }
     }

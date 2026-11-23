@@ -274,6 +274,79 @@ export const focusTerminalTool: AgentTool = {
     },
 }
 
+function dirname (p: string): string {
+    const s = (p ?? '').replace(/\\/g, '/').replace(/\/+$/, '')
+    const i = s.lastIndexOf('/')
+    if (i < 0) {
+        return '.'
+    }
+    return i === 0 ? '/' : s.slice(0, i)
+}
+
+export const readFileTool: AgentTool = {
+    spec: {
+        name: 'read_file',
+        description: 'Read a file from the terminal\'s host (local or SSH). The path must be within the whitelist; if not, the agent asks you to grant access.',
+        parameters: {
+            type: 'object',
+            properties: {
+                path: { type: 'string', description: 'Absolute path of the file to read.' },
+                lines: { type: 'integer', description: 'Read only the first N lines (default: the whole file, up to a size limit).' },
+            },
+            required: ['path'],
+            additionalProperties: false,
+        },
+    },
+    approval: () => null,
+    async execute (args, ctx) {
+        const path = str(args.path)
+        if (!path) {
+            throw new Error('path is required')
+        }
+        if (!ctx.isPathAllowed(path)) {
+            const granted = await ctx.requestApproval(`申请访问目录：${dirname(path)}（读取 ${path}）`)
+            if (!granted) {
+                return 'The user denied access to this path. Do not retry the same path; ask the user for the right path or use a command instead.'
+            }
+            ctx.grantPath(dirname(path))
+        }
+        const lines = num(args.lines, 0)
+        const content = await ctx.readFile(path, lines || undefined)
+        return content || '(empty file)'
+    },
+}
+
+export const listDirTool: AgentTool = {
+    spec: {
+        name: 'list_dir',
+        description: 'List a directory on the terminal\'s host (local or SSH). The path must be within the whitelist; if not, the agent asks you to grant access.',
+        parameters: {
+            type: 'object',
+            properties: {
+                path: { type: 'string', description: 'Absolute path of the directory to list.' },
+            },
+            required: ['path'],
+            additionalProperties: false,
+        },
+    },
+    approval: () => null,
+    async execute (args, ctx) {
+        const path = str(args.path)
+        if (!path) {
+            throw new Error('path is required')
+        }
+        if (!ctx.isPathAllowed(path)) {
+            const granted = await ctx.requestApproval(`申请访问目录：${path}`)
+            if (!granted) {
+                return 'The user denied access to this directory. Do not retry the same path; ask the user for the right path or use a command instead.'
+            }
+            ctx.grantPath(path)
+        }
+        const content = await ctx.listDir(path)
+        return content || '(empty)'
+    },
+}
+
 export const ALL_TOOLS: AgentTool[] = [
     readTerminalTool,
     runCommandTool,
@@ -281,6 +354,8 @@ export const ALL_TOOLS: AgentTool[] = [
     waitForOutputTool,
     askUserTool,
     focusTerminalTool,
+    readFileTool,
+    listDirTool,
 ]
 
 export function findTool (name: string): AgentTool | undefined {
