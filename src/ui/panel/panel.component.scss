@@ -54,6 +54,44 @@
         }
     }
 
+    .term-strip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 12px;
+        border-bottom: 1px solid var(--copilot-border);
+        font-size: .82em;
+        flex: none;
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--copilot-border);
+            flex: none;
+        }
+        .st-idle { background: var(--copilot-border); }
+        .st-active { background: var(--copilot-success); }
+        .st-running { background: var(--copilot-accent); }
+        .st-awaiting_input { background: var(--copilot-warning); }
+        .st-alt_screen { background: var(--copilot-info); }
+        .st-not_started { background: var(--copilot-border); opacity: .5; }
+
+        .term-status {
+            opacity: .8;
+            flex: none;
+        }
+        .term-last-line {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-family: var(--copilot-mono);
+            opacity: .65;
+        }
+    }
+
     .icon-btn {
         display: inline-flex;
         align-items: center;

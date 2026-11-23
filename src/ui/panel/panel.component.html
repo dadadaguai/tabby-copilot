@@ -17,6 +17,12 @@
     </div>
   </header>
 
+  <div class="term-strip" *ngIf="active">
+    <span class="dot" [ngClass]="'st-' + status"></span>
+    <span class="term-status">{{ statusLabel }}</span>
+    <span class="term-last-line" [title]="lastLine">{{ lastLine }}</span>
+  </div>
+
   <copilot-transcript></copilot-transcript>
 
   <div class="error-bar" *ngIf="error">

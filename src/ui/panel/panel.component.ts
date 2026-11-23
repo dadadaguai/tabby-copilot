@@ -14,6 +14,8 @@ import { ComposerComponent } from '../composer/composer.component'
 })
 export class CopilotPanelComponent implements OnInit, OnDestroy {
     active: TerminalEntry | null = null
+    status = ''
+    lastLine = ''
     error: string | null = null
     @ViewChild(ComposerComponent) composer?: ComposerComponent
 
@@ -28,13 +30,11 @@ export class CopilotPanelComponent implements OnInit, OnDestroy {
     ) {}
 
     ngOnInit (): void {
-        this.sub.add(this.registry.changed$.subscribe(() => {
-            this.active = this.registry.getActive()
-        }))
+        this.sub.add(this.registry.changed$.subscribe(() => this.refreshTerminal()))
         this.sub.add(this.agent.state$.subscribe(s => {
             this.error = s.error
         }))
-        this.active = this.registry.getActive()
+        this.refreshTerminal()
     }
 
     ngOnDestroy (): void {
@@ -43,6 +43,18 @@ export class CopilotPanelComponent implements OnInit, OnDestroy {
 
     get side (): 'left' | 'right' {
         return this.host.currentSide
+    }
+
+    get statusLabel (): string {
+        switch (this.status) {
+            case 'idle': return '空闲'
+            case 'active': return '输出中'
+            case 'running': return 'Agent 执行中'
+            case 'awaiting_input': return '等待输入'
+            case 'alt_screen': return '全屏程序'
+            case 'not_started': return '未启动'
+            default: return this.status
+        }
     }
 
     close (): void {
@@ -59,6 +71,12 @@ export class CopilotPanelComponent implements OnInit, OnDestroy {
 
     focusComposer (): void {
         this.composer?.focus()
+    }
+
+    private refreshTerminal (): void {
+        this.active = this.registry.getActive()
+        this.status = this.active ? this.registry.status(this.active) : ''
+        this.lastLine = this.active ? this.registry.lastLine(this.active) : ''
     }
 
     // ---- resize handle

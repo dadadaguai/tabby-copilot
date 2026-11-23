@@ -2,6 +2,13 @@
 
 所有显著变更都记录于此。版本规则：小功能 `0.0.x` 递增，功能累积升级 `0.x.0`。
 
+## v0.0.4 — 2026-11-23
+
+- 终端缓冲读取：xterm marker 锚定、逻辑行合并、`captureLast`/`captureScreen`/`cursorLine`、alternate screen 检测。
+- prompt 检测：学习结束符 + 通用 prompt 模式 + 输入提示（`Password:`/`[Y/n]`）模式。
+- 面板终端状态条：实时展示当前 Tab 的状态（空闲/输出中/等待输入/全屏）与最后一行。
+- 单测 `tests/prompt-detect.test.ts`（6 例）。
+
 ## v0.0.3 — 2026-11-23
 
 - LLM 客户端：OpenAI 兼容 + Node `http/https` 绕 CORS + SSE 流式 + `reasoning_content` 解析。

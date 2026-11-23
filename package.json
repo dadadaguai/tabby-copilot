@@ -1,6 +1,6 @@
 {
   "name": "tabby-copilot",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "description": "Per-tab AI copilot panel for Tabby: a Pi-style terminal agent that reads the screen, runs commands with approval, and reads files inside a per-tab whitelist.",
   "keywords": [
     "tabby-plugin",

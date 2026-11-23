@@ -1,31 +1,92 @@
 import { Injectable, NgZone } from '@angular/core'
-import { BehaviorSubject, Observable } from 'rxjs'
+import { BehaviorSubject, Observable, Subscription } from 'rxjs'
 import { AppService, SplitTabComponent } from 'tabby-core'
 import { BaseTerminalTabComponent } from 'tabby-terminal'
+import { looksLikeInputPrompt } from './util/prompt-detect'
+
+/** An xterm.js marker: a line reference that follows the buffer as it scrolls/trims. */
+export interface XtermMarker {
+    line: number
+    isDisposed: boolean
+    dispose (): void
+}
+
+/** The subset of the xterm.js API we read from. */
+interface XtermLike {
+    rows: number
+    cols: number
+    registerMarker? (cursorYOffset?: number): XtermMarker | undefined
+    buffer: {
+        active: {
+            type: 'normal' | 'alternate'
+            baseY: number
+            cursorY: number
+            cursorX: number
+            viewportY: number
+            length: number
+            getLine (y: number): { translateToString (trimRight?: boolean): string, isWrapped: boolean } | undefined
+        }
+    }
+}
+
+export type TerminalStatus = 'idle' | 'active' | 'running' | 'awaiting_input' | 'alt_screen' | 'not_started' | 'closed'
 
 export interface TerminalEntry {
     id: string
     tab: BaseTerminalTabComponent<any>
     label: string
     connection: string
+    /** Timestamp of the last output chunk from the session. */
+    lastOutputAt: number
+    /** Incremented on every output chunk – cheap change detection. */
+    outputSeq: number
+    /** Id of the tool call currently driving this terminal, if any. */
+    busyWith: string | null
+    /** Where the last capture ended (for "what's new since"). */
+    readMarker: BufferPosition
     closed: boolean
 }
 
 /**
- * Knows about every terminal tab in the app, in visual order.
- *
- * v0.0.1 keeps this deliberately small: it tracks tabs and their labels so the
- * panel can show which terminal it is bound to. v0.0.2+ adds buffer access and
- * per-tab state on top of it.
+ * A position in the buffer. `row` is the absolute row at the time it was
+ * taken; `marker` (when xterm provides one) keeps following that line as the
+ * scrollback fills up and old rows are trimmed – absolute rows alone drift.
+ */
+export interface BufferPosition {
+    row: number
+    marker?: XtermMarker | null
+}
+
+export interface ResolvedPosition {
+    /** Current absolute row of the anchored line (0 if it scrolled away). */
+    row: number
+    /** The anchored line is gone from the buffer. */
+    trimmed: boolean
+    /** The buffer was replaced/cleared since the position was taken. */
+    reset: boolean
+}
+
+export interface BufferCapture {
+    /** Logical lines (wrapped rows joined). */
+    lines: string[]
+    /** Absolute row index just past the captured region. */
+    endRow: number
+    isAlternate: boolean
+}
+
+/**
+ * Knows about every terminal tab in the app, in visual order, and reads their
+ * xterm buffers (anchored with markers) so the agent can see the screen.
  */
 @Injectable({ providedIn: 'root' })
 export class TerminalRegistryService {
     private entries = new Map<string, TerminalEntry>()
     private byTab = new WeakMap<BaseTerminalTabComponent<any>, TerminalEntry>()
-    private seq = 0
+    private subs = new Map<string, Subscription[]>()
     private changed = new BehaviorSubject<TerminalEntry[]>([])
+    private seq = 0
 
-    /** Emits the ordered terminal list whenever tabs change. */
+    /** Emits the ordered terminal list whenever tabs, titles, status or output change. */
     get changed$ (): Observable<TerminalEntry[]> {
         return this.changed.asObservable()
     }
@@ -50,11 +111,34 @@ export class TerminalRegistryService {
             tab,
             label: baseLabel(tab),
             connection: describeConnection(tab),
+            lastOutputAt: 0,
+            outputSeq: 0,
+            busyWith: null,
+            readMarker: { row: 0 },
             closed: false,
         }
         this.entries.set(entry.id, entry)
         this.byTab.set(tab, entry)
-        tab.destroyed$.subscribe(() => this.unregister(tab))
+        const subs: Subscription[] = []
+        try {
+            subs.push(tab.output$.subscribe(() => {
+                entry.lastOutputAt = Date.now()
+                entry.outputSeq++
+                this.emitSoon()
+            }))
+        } catch {
+            // frontend not ready yet – output$ getter can throw; retry when ready
+            subs.push(tab.frontendReady$.subscribe(() => {
+                subs.push(tab.output$.subscribe(() => {
+                    entry.lastOutputAt = Date.now()
+                    entry.outputSeq++
+                    this.emitSoon()
+                }))
+            }))
+        }
+        subs.push(tab.titleChange$.subscribe(() => this.emit()))
+        subs.push(tab.destroyed$.subscribe(() => this.unregister(tab)))
+        this.subs.set(entry.id, subs)
         this.emit()
         return entry
     }
@@ -64,9 +148,18 @@ export class TerminalRegistryService {
         if (!entry || entry.closed) {
             return
         }
-        entry.closed = true
-        this.entries.delete(entry.id)
+        this.close(entry)
         this.emit()
+    }
+
+    private close (entry: TerminalEntry): void {
+        entry.closed = true
+        entry.busyWith = null
+        this.entries.delete(entry.id)
+        for (const s of this.subs.get(entry.id) ?? []) {
+            s.unsubscribe()
+        }
+        this.subs.delete(entry.id)
     }
 
     /** Pick up any terminal tabs the decorator did not report (defensive). */
@@ -93,11 +186,20 @@ export class TerminalRegistryService {
         }
         for (const entry of [...this.entries.values()]) {
             if (!seen.has(entry.id)) {
-                entry.closed = true
-                this.entries.delete(entry.id)
+                this.close(entry)
             }
         }
         return out
+    }
+
+    byId (id: string): TerminalEntry | null {
+        const entry = this.entries.get(id)
+        return entry && !entry.closed ? entry : null
+    }
+
+    forTab (tab: BaseTerminalTabComponent<any>): TerminalEntry | null {
+        const entry = this.byTab.get(tab)
+        return entry && !entry.closed ? entry : null
     }
 
     /** The terminal that currently has (or last had) focus. */
@@ -124,6 +226,201 @@ export class TerminalRegistryService {
         return null
     }
 
+    /** What the terminal is doing right now, from its screen text and output timing. */
+    status (entry: TerminalEntry): TerminalStatus {
+        if (entry.closed) {
+            return 'closed'
+        }
+        if (!this.isReady(entry)) {
+            return 'not_started'
+        }
+        if (entry.busyWith) {
+            return 'running'
+        }
+        if (this.isAlternateScreen(entry)) {
+            return 'alt_screen'
+        }
+        if (Date.now() - entry.lastOutputAt < 1500) {
+            return 'active'
+        }
+        const last = this.lastLine(entry)
+        if (last && looksLikeInputPrompt(last)) {
+            return 'awaiting_input'
+        }
+        return 'idle'
+    }
+
+    /**
+     * Tabs restored on startup stay dormant (no session, no xterm) until they
+     * are shown once. Reading such a tab yields nothing.
+     */
+    isReady (entry: TerminalEntry): boolean {
+        const tab: any = entry.tab
+        return !entry.closed && !!tab.session?.open && !!tab.frontendIsReady && !!this.xterm(entry)
+    }
+
+    // ---- buffer access -------------------------------------------------
+
+    xterm (entry: TerminalEntry): XtermLike | null {
+        const fe: any = entry.tab.frontend
+        return fe?.xterm ?? null
+    }
+
+    isAlternateScreen (entry: TerminalEntry): boolean {
+        const x = this.xterm(entry)
+        return x?.buffer.active.type === 'alternate'
+    }
+
+    /** Absolute row of the cursor (scrollback + viewport). */
+    cursorRow (entry: TerminalEntry): number {
+        const x = this.xterm(entry)
+        if (!x) {
+            return 0
+        }
+        return x.buffer.active.baseY + x.buffer.active.cursorY
+    }
+
+    /** The text of the line under the cursor (typically the prompt). */
+    cursorLine (entry: TerminalEntry): string {
+        const x = this.xterm(entry)
+        if (!x) {
+            return ''
+        }
+        const row = x.buffer.active.baseY + x.buffer.active.cursorY
+        return this.logicalLineAt(x, row)
+    }
+
+    lastLine (entry: TerminalEntry): string {
+        const cap = this.captureLast(entry, 3)
+        for (let i = cap.lines.length - 1; i >= 0; i--) {
+            if (cap.lines[i].trim()) {
+                return cap.lines[i]
+            }
+        }
+        return ''
+    }
+
+    /** Anchor the current cursor line so later captures survive scrollback trimming. */
+    mark (entry: TerminalEntry): BufferPosition {
+        const x = this.xterm(entry)
+        if (!x) {
+            return { row: 0 }
+        }
+        const row = x.buffer.active.baseY + x.buffer.active.cursorY
+        let marker: XtermMarker | null = null
+        try {
+            marker = x.registerMarker?.(0) ?? null
+        } catch {
+            marker = null
+        }
+        return { row, marker }
+    }
+
+    resolve (entry: TerminalEntry, pos: BufferPosition): ResolvedPosition {
+        const x = this.xterm(entry)
+        if (!x) {
+            return { row: 0, trimmed: true, reset: false }
+        }
+        const buf = x.buffer.active
+        const marker = pos.marker
+        if (marker && !marker.isDisposed && marker.line >= 0) {
+            return { row: marker.line, trimmed: false, reset: false }
+        }
+        if (marker) {
+            // the anchored line is gone: either trimmed by a full scrollback or the buffer was replaced
+            const reset = buf.length < pos.row
+            return { row: 0, trimmed: true, reset }
+        }
+        // no marker support: fall back to the absolute row
+        const cursorRow = buf.baseY + buf.cursorY
+        const reset = cursorRow < pos.row - 1 && buf.length < pos.row
+        return { row: Math.max(0, Math.min(pos.row, cursorRow + 1)), trimmed: false, reset }
+    }
+
+    /** Rows from `from` (inclusive) to the cursor row (inclusive), joined into logical lines. */
+    captureSince (entry: TerminalEntry, from: BufferPosition | number, maxLines = 2000): BufferCapture {
+        const x = this.xterm(entry)
+        if (!x) {
+            return { lines: [], endRow: 0, isAlternate: false }
+        }
+        const buf = x.buffer.active
+        const endRow = buf.baseY + buf.cursorY
+        const fromRow = typeof from === 'number' ? from : this.resolve(entry, from).row
+        const start = Math.max(0, Math.min(fromRow, endRow + 1))
+        const lines = this.logicalLines(x, start, endRow, maxLines)
+        return { lines, endRow: endRow + 1, isAlternate: buf.type === 'alternate' }
+    }
+
+    /** The last `n` logical lines of the buffer. */
+    captureLast (entry: TerminalEntry, n: number): BufferCapture {
+        const x = this.xterm(entry)
+        if (!x) {
+            return { lines: [], endRow: 0, isAlternate: false }
+        }
+        const buf = x.buffer.active
+        const endRow = buf.baseY + buf.cursorY
+        // rows are cheap to read; over-fetch to account for wrapped rows then trim
+        const start = Math.max(0, endRow - n * 2 - 2)
+        let lines = this.logicalLines(x, start, endRow, n * 3)
+        if (lines.length > n) {
+            lines = lines.slice(lines.length - n)
+        }
+        return { lines, endRow: endRow + 1, isAlternate: buf.type === 'alternate' }
+    }
+
+    /** What's currently visible on screen (useful for alternate-screen apps). */
+    captureScreen (entry: TerminalEntry): BufferCapture {
+        const x = this.xterm(entry)
+        if (!x) {
+            return { lines: [], endRow: 0, isAlternate: false }
+        }
+        const buf = x.buffer.active
+        const start = buf.viewportY
+        const end = Math.min(buf.length - 1, start + x.rows - 1)
+        return { lines: this.logicalLines(x, start, end, x.rows * 2), endRow: end + 1, isAlternate: buf.type === 'alternate' }
+    }
+
+    private logicalLines (x: XtermLike, start: number, end: number, maxLines: number): string[] {
+        const buf = x.buffer.active
+        const out: string[] = []
+        // walk back to the start of a wrapped logical line so we don't cut it
+        let s = start
+        while (s > 0 && buf.getLine(s)?.isWrapped) {
+            s--
+        }
+        for (let i = s; i <= end; i++) {
+            const line = buf.getLine(i)
+            if (!line) {
+                continue
+            }
+            const text = line.translateToString(true)
+            if (line.isWrapped && out.length) {
+                out[out.length - 1] += text
+            } else {
+                out.push(text)
+            }
+            if (out.length > maxLines) {
+                out.shift()
+            }
+        }
+        return out
+    }
+
+    private logicalLineAt (x: XtermLike, row: number): string {
+        const buf = x.buffer.active
+        let s = row
+        while (s > 0 && buf.getLine(s)?.isWrapped) {
+            s--
+        }
+        let text = ''
+        for (let i = s; i <= row; i++) {
+            text += buf.getLine(i)?.translateToString(true) ?? ''
+        }
+        return text
+    }
+
+    // ---- internals -----------------------------------------------------
+
     private * iterateTerminalTabs (): Generator<BaseTerminalTabComponent<any>> {
         for (const tab of this.app.tabs ?? []) {
             if (tab instanceof SplitTabComponent) {
@@ -138,8 +435,20 @@ export class TerminalRegistryService {
         }
     }
 
+    private emitTimer: any = null
+
     private emit (): void {
         this.zone.run(() => this.changed.next(this.list()))
+    }
+
+    private emitSoon (): void {
+        if (this.emitTimer) {
+            return
+        }
+        this.emitTimer = setTimeout(() => {
+            this.emitTimer = null
+            this.emit()
+        }, 150)
     }
 }
 

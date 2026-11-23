@@ -321,7 +321,7 @@ while 任务未完成 且 轮次未超限:
 | **v0.0.1** | 初始化：PRD + git 仓库 + 密钥规范 | 已提交并推送 ✅ |
 | **v0.0.2** | 工程脚手架：Tabby 插件骨架、per-Tab 面板挂载、设置页 | 面板可挂到 Tab 右侧并打开/关闭 ✅ |
 | **v0.0.3** | LLM 客户端 + 线性流对话 UI + 思考链折叠 | 填 DeepSeek key 后能流式对话、折叠推理 ✅ |
-| **v0.0.4** | 终端桥接 + prompt 检测 + 缓冲读取 | 能读本 Tab 屏幕、正确识别 prompt |
+| **v0.0.4** | 终端桥接 + prompt 检测 + 缓冲读取 | 能读本 Tab 屏幕、正确识别 prompt ✅ |
 | **v0.0.5** | `run_command` 状态机 + 风险分级 + 审批 | 命令按状态机返回、风险徽章正确、可批准/拒绝 |
 | **v0.0.6** | `send_keys` / `wait_for_output` / `ask_user` / `focus_terminal` | 能回答 `[Y/n]`、等待长任务、向用户提问 |
 | **v0.0.7** | 文件读取 + 白名单（local/SFTP/exec） | `read_file`/`list_dir` 受白名单约束，本地+SSH 可读 |
