@@ -19,7 +19,7 @@ Tabby 终端原生 AI 副驾驶插件 —— **单 Tab 隔离**的 Pi 式 Agent 
 
 ## 状态
 
-**v0.1.0** —— PRD 的 8 个里程碑全部完成，25 个测试通过（24 单测 + 1 流式冒烟）。见 [PRD](prd.md) 第 8 节路线图。
+**v0.2.2** —— PRD 的 8 个里程碑全部完成，25 个测试通过（24 单测 + 1 流式冒烟）。见 [PRD](prd.md) 第 8 节路线图。
 
 ## 快速开始
 
@@ -33,10 +33,24 @@ npm run preview      # HTML 预览（localhost:8787）
 
 ### 在 Tabby 中安装
 
-1. `npm run build`。
-2. Tabby 内 **Settings → Plugins**，点 **Install plugin** 选择本项目目录（或 `dist` 产物）。
-3. 重启 Tabby；工具栏出现 **Copilot** 按钮，或按 `Ctrl+Alt+A` 打开面板。
-4. **Settings → Copilot** 填写 DeepSeek 的 Endpoint / API Key / Model。
+用一键脚本（build → npm pack → 装进 Tabby 插件目录）：
+
+```powershell
+.\install.ps1
+```
+
+或手动执行（等价）：
+
+```powershell
+npm run build
+npm pack
+cd $env:APPDATA\tabby\plugins
+npm install "<项目路径>\tabby-copilot-<版本>.tgz" --no-audit --no-fund
+```
+
+> 关键：Tabby 的用户插件是装到 `%APPDATA%\tabby\plugins`（会生成 `node_modules\tabby-copilot`），**不是**用 Tabby 界面的「Install plugin」（那个只认 zip，会留下「Cannot load package info」的坏注册）。
+
+装完**重启 Tabby**；工具栏出现 **Copilot** 按钮，或按 `Ctrl+Alt+A` 打开面板。然后在 **Settings → Copilot** 填写 DeepSeek 的 Endpoint / API Key / Model。
 
 ## 架构
 
