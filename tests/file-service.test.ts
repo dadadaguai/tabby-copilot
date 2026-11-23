@@ -65,12 +65,14 @@ test('grant adds a normalized prefix once', () => {
 test('readFile reads a local file and slices lines', async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'copilot-'))
     const file = path.join(dir, 'test.txt')
-    fs.writeFileSync(file, 'a\nb\nc\n', 'utf8')
+    fs.writeFileSync(file, 'a\nb\nc\nd\n', 'utf8')
     try {
         const svc = new FileService()
         const e = entry()
         assert.strictEqual(await svc.readFile(e, file, 2), 'a\nb')
-        assert.strictEqual(await svc.readFile(e, file), 'a\nb\nc\n')
+        assert.strictEqual(await svc.readFile(e, file), 'a\nb\nc\nd\n')
+        assert.strictEqual(await svc.readFile(e, file, 2, 1), 'b\nc')
+        assert.strictEqual(await svc.readFile(e, file, undefined, 2), 'c\nd\n')
     } finally {
         fs.rmSync(dir, { recursive: true, force: true })
     }

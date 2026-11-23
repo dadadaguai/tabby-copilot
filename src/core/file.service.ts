@@ -94,13 +94,13 @@ export class FileService {
         }
     }
 
-    async readFile (entry: TerminalEntry, p: string, lines?: number): Promise<string> {
+    async readFile (entry: TerminalEntry, p: string, lines?: number, offset?: number): Promise<string> {
         const kind = this.kind(entry)
         if (kind === 'local') {
-            return sliceLines(await this.readLocal(p), lines)
+            return sliceLines(await this.readLocal(p), lines, offset)
         }
         if (kind === 'ssh') {
-            return this.readSsh(entry, p, lines)
+            return this.readSsh(entry, p, lines, offset)
         }
         throw new Error(`Terminal "${entry.label}" does not support file reading.`)
     }
@@ -140,17 +140,27 @@ export class FileService {
         return fs.promises.readFile(resolved, 'utf8')
     }
 
-    private async readSsh (entry: TerminalEntry, p: string, lines?: number): Promise<string> {
+    private async readSsh (entry: TerminalEntry, p: string, lines?: number, offset?: number): Promise<string> {
         const session: any = entry.tab.session
         const sftp = await this.tryOpenSftp(session)
         if (sftp) {
             try {
-                return sliceLines(await this.sftpReadFile(sftp, p), lines)
+                return sliceLines(await this.sftpReadFile(sftp, p), lines, offset)
             } catch {
                 // fall through to exec
             }
         }
-        const cmd = lines ? `sed -n '1,${lines}p' ${shellQuote(p)}` : `cat ${shellQuote(p)}`
+        const from = Math.max(1, (offset ?? 0) + 1)
+        let cmd: string
+        if (lines && offset) {
+            cmd = `sed -n '${from},${from + lines - 1}p' ${shellQuote(p)}`
+        } else if (lines) {
+            cmd = `sed -n '1,${lines}p' ${shellQuote(p)}`
+        } else if (offset) {
+            cmd = `sed -n '${from},$p' ${shellQuote(p)}`
+        } else {
+            cmd = `cat ${shellQuote(p)}`
+        }
         return this.execRead(entry, cmd)
     }
 
@@ -215,11 +225,13 @@ export class FileService {
     }
 }
 
-function sliceLines (content: string, lines?: number): string {
+function sliceLines (content: string, lines?: number, offset?: number): string {
+    const all = content.split('\n')
+    const start = Math.max(0, offset ?? 0)
     if (!lines || lines <= 0) {
-        return content
+        return start ? all.slice(start).join('\n') : content
     }
-    return content.split('\n').slice(0, lines).join('\n')
+    return all.slice(start, start + lines).join('\n')
 }
 
 function shellQuote (s: string): string {

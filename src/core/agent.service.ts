@@ -70,7 +70,15 @@ export class AgentService {
     }
 
     get configured (): boolean {
-        return !!this.settings.endpoint.trim()
+        const endpoint = this.settings.endpoint.trim()
+        if (!endpoint) {
+            return false
+        }
+        if (this.settings.apiKey.trim()) {
+            return true
+        }
+        // Keyless local endpoints (e.g. Ollama) are allowed without an API key.
+        return /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?/i.test(endpoint)
     }
 
     get approvalMode (): ApprovalMode {
@@ -546,12 +554,12 @@ export class AgentService {
                     this.fileService.grant(t, path)
                 }
             },
-            readFile: (path, lines) => {
+            readFile: (path, lines, offset) => {
                 const t = this.currentTerminal()
                 if (!t) {
                     throw new Error('No active terminal. Open a terminal tab first.')
                 }
-                return this.fileService.readFile(t, path, lines)
+                return this.fileService.readFile(t, path, lines, offset)
             },
             listDir: path => {
                 const t = this.currentTerminal()

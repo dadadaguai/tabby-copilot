@@ -26,7 +26,7 @@ export interface ToolContext {
     askUser (question: string, choices?: string[]): Promise<string>
     isPathAllowed (path: string): boolean
     grantPath (path: string): void
-    readFile (path: string, lines?: number): Promise<string>
+    readFile (path: string, lines?: number, offset?: number): Promise<string>
     listDir (path: string): Promise<string>
     requestApproval (message: string): Promise<boolean>
 }

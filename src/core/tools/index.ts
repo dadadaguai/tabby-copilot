@@ -158,7 +158,7 @@ export const sendKeysTool: AgentTool = {
     },
     approval (args): ApprovalRequirement {
         const keys: string[] = Array.isArray(args.keys) ? args.keys.map(str) : []
-        const benign = keys.every(k => /^(ctrl-c|ctrl-l|esc|escape|enter|q|space|up|down|left|right|pageup|pagedown|home|end)$/i.test(k.trim()))
+        const benign = keys.every(k => /^(ctrl-c|ctrl-l|esc|escape|space|up|down|left|right|pageup|pagedown|home|end)$/i.test(k.trim()))
         const claimed = normalizeRisk(args.risk_level ?? (benign ? 'low' : 'medium'))
         return { level: benign ? claimed : maxRisk(claimed, 'medium'), hardBlock: false }
     },
@@ -298,6 +298,7 @@ export const readFileTool: AgentTool = {
             properties: {
                 path: { type: 'string', description: 'Absolute path of the file to read.' },
                 lines: { type: 'integer', description: 'Read only the first N lines (default: the whole file, up to a size limit).' },
+                offset: { type: 'integer', description: 'Skip the first N lines before reading.' },
             },
             required: ['path'],
             additionalProperties: false,
@@ -317,7 +318,8 @@ export const readFileTool: AgentTool = {
             ctx.grantPath(dirname(path))
         }
         const lines = num(args.lines, 0)
-        const content = await ctx.readFile(path, lines || undefined)
+        const offset = Math.max(0, Math.floor(num(args.offset, 0)))
+        const content = await ctx.readFile(path, lines || undefined, offset || undefined)
         return content || '(empty file)'
     },
 }
