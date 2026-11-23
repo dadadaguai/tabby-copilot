@@ -1,5 +1,6 @@
+import { ApprovalMode } from './session'
+
 export type PanelSide = 'left' | 'right'
-export type ApprovalMode = 'ask' | 'auto_low' | 'auto_medium' | 'auto_all'
 
 export interface CopilotConfig {
     endpoint: string

@@ -20,6 +20,7 @@ import { CONFIG_KEY, DEFAULT_CONFIG } from './types/config'
 import { CopilotPanelComponent } from './ui/panel/panel.component'
 import { CopilotSettingsComponent } from './ui/settings/settings.component'
 import { TranscriptComponent } from './ui/transcript/transcript.component'
+import { ToolCallComponent } from './ui/transcript/tool-call.component'
 import { ComposerComponent } from './ui/composer/composer.component'
 import { CopilotMarkdownPipe } from './ui/pipes/markdown.pipe'
 
@@ -47,6 +48,7 @@ import { CopilotMarkdownPipe } from './ui/pipes/markdown.pipe'
         CopilotPanelComponent,
         CopilotSettingsComponent,
         TranscriptComponent,
+        ToolCallComponent,
         ComposerComponent,
         CopilotMarkdownPipe,
     ],

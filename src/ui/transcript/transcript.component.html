@@ -25,6 +25,8 @@
           <span></span><span></span><span></span>
         </div>
 
+        <copilot-tool-call *ngFor="let call of m.toolCalls" [call]="call"></copilot-tool-call>
+
         <div class="marker interrupted" *ngIf="m.interrupted"><i class="fas fa-stop"></i> 已停止</div>
         <div class="marker error" *ngIf="m.error"><i class="fas fa-exclamation-triangle"></i> {{ m.error }}</div>
       </div>

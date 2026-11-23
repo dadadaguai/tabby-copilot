@@ -1,0 +1,25 @@
+<div class="tool-call" [class.pending]="call.status === 'pending_approval'">
+  <div class="tc-header" (click)="expanded = !expanded">
+    <i class="fas tc-icon" [class.fa-terminal]="call.name === 'run_command'" [class.fa-eye]="call.name === 'read_terminal'" [class.fa-spinner.fa-spin]="call.status === 'running'"></i>
+    <span class="tc-title">{{ title }}</span>
+    <span class="tc-risk" *ngIf="call.riskLevel"
+          [class.risk-high]="call.riskLevel === 'high'"
+          [class.risk-medium]="call.riskLevel === 'medium'">{{ riskLabel }}</span>
+    <span class="tc-status" [class.error]="call.status === 'error'"
+          [class.declined]="call.status === 'declined'">{{ statusLabel }}</span>
+    <i class="fas tc-caret" [class.fa-chevron-right]="!bodyVisible" [class.fa-chevron-down]="bodyVisible"></i>
+  </div>
+
+  <div class="tc-body" *ngIf="bodyVisible">
+    <div class="tc-command" *ngIf="command"><code>{{ command }}</code></div>
+    <div class="tc-explanation" *ngIf="explanation">{{ explanation }}</div>
+
+    <div class="tc-actions" *ngIf="call.status === 'pending_approval'">
+      <button class="btn approve" type="button" (click)="approve()">批准</button>
+      <button class="btn deny" type="button" (click)="deny()">拒绝</button>
+    </div>
+    <div class="tc-hardblock" *ngIf="call.status === 'pending_approval' && call.progress">{{ call.progress }}</div>
+
+    <div class="tc-output" *ngIf="outputText"><pre>{{ outputText }}</pre></div>
+  </div>
+</div>

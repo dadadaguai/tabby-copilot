@@ -1,0 +1,105 @@
+:host {
+    display: block;
+}
+
+.tool-call {
+    margin-top: 8px;
+    border: 1px solid var(--copilot-border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--copilot-surface);
+
+    &.pending { border-color: var(--copilot-accent); }
+
+    .tc-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        cursor: pointer;
+        user-select: none;
+        font-size: .88em;
+
+        &:hover { background: var(--copilot-surface-2); }
+
+        .tc-icon { opacity: .65; flex: none; }
+        .tc-title { flex: none; font-weight: 500; }
+        .tc-status {
+            flex: none;
+            opacity: .7;
+            &.error { color: var(--copilot-danger); opacity: 1; }
+            &.declined { color: var(--copilot-warning); }
+        }
+        .tc-caret { margin-left: auto; opacity: .5; flex: none; }
+    }
+
+    .tc-risk {
+        flex: none;
+        font-size: .78em;
+        padding: 1px 6px;
+        border-radius: 4px;
+        background: var(--copilot-surface-2);
+        opacity: .8;
+
+        &.risk-high { background: var(--copilot-danger); color: #fff; opacity: 1; }
+        &.risk-medium { background: var(--copilot-warning); color: #1b1e23; opacity: 1; }
+    }
+
+    .tc-body {
+        padding: 8px 10px;
+        border-top: 1px solid var(--copilot-border);
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+
+        .tc-command code {
+            font-family: var(--copilot-mono);
+            font-size: .85em;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+
+        .tc-explanation {
+            font-size: .85em;
+            opacity: .75;
+        }
+
+        .tc-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+
+            .btn {
+                border: none;
+                border-radius: 6px;
+                padding: 5px 14px;
+                font: inherit;
+                font-size: .88em;
+                cursor: pointer;
+
+                &.approve { background: var(--copilot-accent); color: #fff; }
+                &.deny { background: var(--copilot-surface-2); color: inherit; }
+            }
+        }
+
+        .tc-hardblock {
+            font-size: .82em;
+            color: var(--copilot-danger);
+        }
+
+        .tc-output {
+            pre {
+                margin: 0;
+                padding: 8px 10px;
+                border-radius: 6px;
+                background: rgba(0, 0, 0, 0.18);
+                font-family: var(--copilot-mono);
+                font-size: .82em;
+                white-space: pre-wrap;
+                word-break: break-word;
+                max-height: 260px;
+                overflow-y: auto;
+            }
+        }
+    }
+}

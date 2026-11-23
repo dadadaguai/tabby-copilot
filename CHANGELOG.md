@@ -2,6 +2,14 @@
 
 所有显著变更都记录于此。版本规则：小功能 `0.0.x` 递增，功能累积升级 `0.x.0`。
 
+## v0.0.5 — 2026-11-23
+
+- `run_command` 状态机：8 种退出态（prompt / awaiting_input / alt_screen / idle / timeout / reset / cancelled / matched）。
+- 风险分级：毁灭性清单（永远确认）+ 变更清单（至少 medium），模型自评只升不降。
+- 审批门控：ask / auto_low / auto_medium / auto_all，工具调用卡片可批准/拒绝。
+- Agent 循环：Pi 式 tool calling 循环（`read_terminal` + `run_command`），单轮最多 80 次工具调用。
+- 单测：risk（6 例）、terminal-runner 状态机（1 例）。
+
 ## v0.0.4 — 2026-11-23
 
 - 终端缓冲读取：xterm marker 锚定、逻辑行合并、`captureLast`/`captureScreen`/`cursorLine`、alternate screen 检测。

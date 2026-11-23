@@ -259,6 +259,13 @@ export class TerminalRegistryService {
         return !entry.closed && !!tab.session?.open && !!tab.frontendIsReady && !!this.xterm(entry)
     }
 
+    sendInput (entry: TerminalEntry, data: string): void {
+        if (entry.closed) {
+            throw new Error(`Terminal "${entry.label}" is closed.`)
+        }
+        this.zone.run(() => entry.tab.sendInput(data))
+    }
+
     // ---- buffer access -------------------------------------------------
 
     xterm (entry: TerminalEntry): XtermLike | null {
