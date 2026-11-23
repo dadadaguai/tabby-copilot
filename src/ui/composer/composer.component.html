@@ -11,7 +11,9 @@
     </button>
   </div>
   <div class="footer">
-    <span class="model">{{ model }}</span>
+    <select class="model-select" [ngModel]="model" (ngModelChange)="setModel($event)" title="切换模型">
+      <option *ngFor="let m of availableModels" [value]="m">{{ m }}</option>
+    </select>
     <span class="tokens">{{ tokens }} tokens</span>
     <select class="approval-mode" [ngModel]="approvalMode" (ngModelChange)="setApprovalMode($event)" title="审批模式">
       <option value="">审批：跟随全局（{{ agent.settings.approvalMode }}）</option>

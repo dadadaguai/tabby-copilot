@@ -1,7 +1,10 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core'
 import { Subscription } from 'rxjs'
+import { ConfigService } from 'tabby-core'
 import { AgentService, AgentState } from '../../core/agent.service'
+import { ModelCatalogService } from '../../core/model-catalog.service'
 import { ApprovalMode } from '../../types/session'
+import { CONFIG_KEY } from '../../types/config'
 
 @Component({
     selector: 'copilot-composer',
@@ -12,12 +15,18 @@ export class ComposerComponent implements OnInit, OnDestroy {
     @ViewChild('textarea') textarea?: ElementRef<HTMLTextAreaElement>
     draft = ''
     state!: AgentState
+    availableModels: string[] = ['deepseek-chat', 'deepseek-reasoner']
     private sub = new Subscription()
 
-    constructor (public agent: AgentService) {}
+    constructor (
+        public agent: AgentService,
+        private config: ConfigService,
+        private catalog: ModelCatalogService,
+    ) {}
 
     ngOnInit (): void {
         this.sub.add(this.agent.state$.subscribe(s => { this.state = s }))
+        void this.loadModels()
     }
 
     ngOnDestroy (): void {
@@ -46,6 +55,35 @@ export class ComposerComponent implements OnInit, OnDestroy {
 
     get tokens (): number {
         return (this.state?.session.stats.promptTokens ?? 0) + (this.state?.session.stats.completionTokens ?? 0)
+    }
+
+    async loadModels (): Promise<void> {
+        let extra: string[] = []
+        try {
+            extra = await this.catalog.list()
+        } catch {
+            // catalog fetch is best-effort; keep the defaults
+        }
+        const merged = [...this.availableModels]
+        for (const m of extra) {
+            if (!merged.includes(m)) {
+                merged.push(m)
+            }
+        }
+        const current = this.agent.settings.model
+        if (current && !merged.includes(current)) {
+            merged.unshift(current)
+        }
+        this.availableModels = merged
+    }
+
+    setModel (value: string): void {
+        if (!value) {
+            return
+        }
+        this.config.store[CONFIG_KEY] ??= {}
+        this.config.store[CONFIG_KEY].model = value
+        this.config.save()
     }
 
     focus (): void {
