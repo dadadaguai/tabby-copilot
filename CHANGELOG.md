@@ -2,6 +2,14 @@
 
 所有显著变更都记录于此。版本规则：小功能 `0.0.x` 递增，功能累积升级 `0.x.0`。
 
+## v0.0.3 — 2026-11-23
+
+- LLM 客户端：OpenAI 兼容 + Node `http/https` 绕 CORS + SSE 流式 + `reasoning_content` 解析。
+- `AgentService`：流式对话、思考链收集、中止。
+- 线性流对话 UI：transcript（思考链折叠、Markdown 渲染、打字指示、复制代码）、composer（Enter 发送）。
+- HTML 预览：`npm run preview`（本地服务器 + 静态聊天页，真实流式对话）。
+- 流式冒烟测试 `tests/stream.test.ts`（读取 `.env` 的 DeepSeek key）。
+
 ## v0.0.2 — 2026-11-23
 
 - 工程脚手架：Tabby 插件骨架（Angular 15 + Webpack 5）、per-Tab 面板挂载、工具栏按钮/热键、设置页。

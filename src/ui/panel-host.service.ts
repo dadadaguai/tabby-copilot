@@ -73,6 +73,7 @@ export class PanelHostService {
             this.visible = true
             this.persist({ panelVisible: true })
         }
+        setTimeout(() => this.ref?.instance.focusComposer(), 50)
     }
 
     hide (): void {

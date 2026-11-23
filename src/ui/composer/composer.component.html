@@ -1,0 +1,16 @@
+<div class="composer">
+  <div class="input-row" [class.busy]="busy">
+    <textarea #textarea rows="1" [(ngModel)]="draft" (input)="onInput()" (keydown)="onKeydown($event)"
+              [placeholder]="busy ? 'Copilot 正在思考…' : '让 Copilot 帮你干活…（Enter 发送，Shift+Enter 换行）'"
+              spellcheck="false"></textarea>
+    <button class="send-btn" type="button" *ngIf="!busy" [disabled]="!canSend" (click)="send()" title="发送 (Enter)">
+      <i class="fas fa-arrow-up"></i>
+    </button>
+    <button class="send-btn stop" type="button" *ngIf="busy" (click)="stop()" title="停止">
+      <i class="fas fa-stop"></i>
+    </button>
+  </div>
+  <div class="footer">
+    <span class="model">{{ model }}</span>
+  </div>
+</div>

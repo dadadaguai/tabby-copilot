@@ -76,14 +76,22 @@
         }
     }
 
-    .panel-body {
-        flex: 1;
-        overflow: auto;
-        padding: 14px;
+    .error-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        background: var(--copilot-danger);
+        color: #fff;
+        font-size: .85em;
+        flex: none;
 
-        .placeholder {
-            line-height: 1.6;
-            .muted { opacity: .55; }
+        .error-text {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
+        .icon-btn { color: #fff; }
     }
 }

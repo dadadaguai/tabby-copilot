@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core'
 import { CommonModule } from '@angular/common'
 import { FormsModule } from '@angular/forms'
-import TabbyCoreModule, { CommandProvider, ConfigProvider, HotkeyProvider } from 'tabby-core'
+import TabbyCoreModule, { CommandProvider, ConfigProvider, ConfigService, HotkeyProvider } from 'tabby-core'
 import TabbyTerminalModule, { TerminalDecorator } from 'tabby-terminal'
 import { SettingsTabProvider } from 'tabby-settings'
 
@@ -14,9 +14,14 @@ import { CopilotSettingsTabProvider } from './settings-tab'
 import { CopilotTerminalDecorator } from './decorator'
 import { PanelHostService } from './ui/panel-host.service'
 import { TerminalRegistryService } from './core/terminal-registry.service'
+import { CONFIG_ACCESSOR } from './core/config-token'
+import { CONFIG_KEY, DEFAULT_CONFIG } from './types/config'
 
 import { CopilotPanelComponent } from './ui/panel/panel.component'
 import { CopilotSettingsComponent } from './ui/settings/settings.component'
+import { TranscriptComponent } from './ui/transcript/transcript.component'
+import { ComposerComponent } from './ui/composer/composer.component'
+import { CopilotMarkdownPipe } from './ui/pipes/markdown.pipe'
 
 /** @hidden */
 @NgModule({
@@ -32,10 +37,18 @@ import { CopilotSettingsComponent } from './ui/settings/settings.component'
         { provide: CommandProvider, useClass: CopilotCommandProvider, multi: true },
         { provide: SettingsTabProvider, useClass: CopilotSettingsTabProvider, multi: true },
         { provide: TerminalDecorator, useClass: CopilotTerminalDecorator, multi: true },
+        {
+            provide: CONFIG_ACCESSOR,
+            useFactory: (config: ConfigService) => () => ({ ...DEFAULT_CONFIG, ...(config.store?.[CONFIG_KEY] ?? {}) }),
+            deps: [ConfigService],
+        },
     ],
     declarations: [
         CopilotPanelComponent,
         CopilotSettingsComponent,
+        TranscriptComponent,
+        ComposerComponent,
+        CopilotMarkdownPipe,
     ],
 })
 export default class CopilotModule {

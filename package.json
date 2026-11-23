@@ -16,7 +16,8 @@
     "build": "webpack --progress --color",
     "watch": "TABBY_DEV=1 webpack --progress --color --watch",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "node --import tsx --test \"tests/**/*.test.ts\""
+    "test": "node --import tsx --test \"tests/**/*.test.ts\"",
+    "preview": "tsx preview/server.ts"
   },
   "files": [
     "dist"
@@ -38,8 +39,11 @@
     "@ngtools/webpack": "^15.2.10",
     "@tabby-gang/to-string-loader": "^1.1.7-beta.2",
     "@types/node": "^20.11.0",
+    "@types/dompurify": "^3.0.5",
     "babel-loader": "^9.1.3",
     "css-loader": "^6.10.0",
+    "dompurify": "^3.1.0",
+    "marked": "^12.0.0",
     "sass": "^1.71.0",
     "sass-loader": "^14.1.0",
     "source-map-loader": "^5.0.0",

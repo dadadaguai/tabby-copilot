@@ -1,9 +1,11 @@
-import { Component, HostListener, OnDestroy, OnInit } from '@angular/core'
+import { Component, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core'
 import { Subscription } from 'rxjs'
 import { AppService } from 'tabby-core'
 import { SettingsTabComponent } from 'tabby-settings'
 import { PanelHostService } from '../panel-host.service'
 import { TerminalEntry, TerminalRegistryService } from '../../core/terminal-registry.service'
+import { AgentService } from '../../core/agent.service'
+import { ComposerComponent } from '../composer/composer.component'
 
 @Component({
     selector: 'tabby-copilot-panel',
@@ -12,18 +14,25 @@ import { TerminalEntry, TerminalRegistryService } from '../../core/terminal-regi
 })
 export class CopilotPanelComponent implements OnInit, OnDestroy {
     active: TerminalEntry | null = null
+    error: string | null = null
+    @ViewChild(ComposerComponent) composer?: ComposerComponent
+
     private sub = new Subscription()
     private dragging = false
 
     constructor (
         public host: PanelHostService,
         public registry: TerminalRegistryService,
+        public agent: AgentService,
         private app: AppService,
     ) {}
 
     ngOnInit (): void {
         this.sub.add(this.registry.changed$.subscribe(() => {
             this.active = this.registry.getActive()
+        }))
+        this.sub.add(this.agent.state$.subscribe(s => {
+            this.error = s.error
         }))
         this.active = this.registry.getActive()
     }
@@ -42,6 +51,14 @@ export class CopilotPanelComponent implements OnInit, OnDestroy {
 
     openSettings (): void {
         this.app.openNewTabRaw({ type: SettingsTabComponent, inputs: { activeTab: 'tabby-copilot' } })
+    }
+
+    clearError (): void {
+        this.agent.clearError()
+    }
+
+    focusComposer (): void {
+        this.composer?.focus()
     }
 
     // ---- resize handle

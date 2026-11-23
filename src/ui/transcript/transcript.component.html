@@ -1,0 +1,33 @@
+<div #scroller class="transcript" (scroll)="onScroll()" (click)="onClick($event)">
+  <div class="transcript-content">
+    <div class="empty" *ngIf="!messages.length">
+      <div class="empty-title">和 Copilot 对话</div>
+      <p class="empty-hint" *ngIf="!agent.configured">先在 Settings → Copilot 配置 DeepSeek 端点与 API Key。</p>
+    </div>
+
+    <ng-container *ngFor="let m of messages; trackBy: trackMessage">
+      <div class="msg user" *ngIf="m.role === 'user'">
+        <div class="bubble">{{ m.content }}</div>
+      </div>
+
+      <div class="msg assistant" *ngIf="m.role === 'assistant'" [class.streaming]="isStreaming(m)">
+        <div class="reasoning" *ngIf="m.reasoning">
+          <button class="reasoning-toggle" type="button" (click)="toggleReasoning(m)">
+            <i class="fas" [class.fa-chevron-right]="!reasoningExpanded(m)" [class.fa-chevron-down]="reasoningExpanded(m)"></i>
+            思考过程
+            <span class="spin" *ngIf="isStreaming(m) && !m.content"><i class="fas fa-circle-notch fa-spin"></i></span>
+          </button>
+          <pre class="reasoning-body" *ngIf="reasoningExpanded(m)">{{ m.reasoning }}</pre>
+        </div>
+
+        <div class="markdown" *ngIf="m.content" [innerHTML]="m.content | copilotMarkdown"></div>
+        <div class="typing" *ngIf="isStreaming(m) && !m.content && !m.reasoning">
+          <span></span><span></span><span></span>
+        </div>
+
+        <div class="marker interrupted" *ngIf="m.interrupted"><i class="fas fa-stop"></i> 已停止</div>
+        <div class="marker error" *ngIf="m.error"><i class="fas fa-exclamation-triangle"></i> {{ m.error }}</div>
+      </div>
+    </ng-container>
+  </div>
+</div>

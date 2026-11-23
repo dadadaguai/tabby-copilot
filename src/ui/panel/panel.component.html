@@ -17,10 +17,13 @@
     </div>
   </header>
 
-  <div class="panel-body">
-    <div class="placeholder">
-      <p>面板已挂载到右侧，当前绑定终端：<strong>{{ active?.label ?? '—' }}</strong></p>
-      <p class="muted">Pi 式 Agent 内核、线性流对话、终端执行与文件白名单将在 v0.0.3 起逐步接入。</p>
-    </div>
+  <copilot-transcript></copilot-transcript>
+
+  <div class="error-bar" *ngIf="error">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span class="error-text">{{ error }}</span>
+    <button class="icon-btn" type="button" (click)="clearError()" title="关闭"><i class="fas fa-times"></i></button>
   </div>
+
+  <copilot-composer></copilot-composer>
 </div>
