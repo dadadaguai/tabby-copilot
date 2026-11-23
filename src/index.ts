@@ -14,6 +14,10 @@ import { CopilotSettingsTabProvider } from './settings-tab'
 import { CopilotTerminalDecorator } from './decorator'
 import { PanelHostService } from './ui/panel-host.service'
 import { TerminalRegistryService } from './core/terminal-registry.service'
+import { AgentService } from './core/agent.service'
+import { FileService } from './core/file.service'
+import { SessionStoreService } from './core/session-store.service'
+import { ModelCatalogService } from './core/model-catalog.service'
 import { CONFIG_ACCESSOR } from './core/config-token'
 import { CONFIG_KEY, DEFAULT_CONFIG } from './types/config'
 
@@ -39,6 +43,15 @@ import { CopilotMarkdownPipe } from './ui/pipes/markdown.pipe'
         { provide: CommandProvider, useClass: CopilotCommandProvider, multi: true },
         { provide: SettingsTabProvider, useClass: CopilotSettingsTabProvider, multi: true },
         { provide: TerminalDecorator, useClass: CopilotTerminalDecorator, multi: true },
+        // Register these explicitly in the module injector: Tabby loads each
+        // plugin in its own module scope, so `providedIn: 'root'` services
+        // cannot see the module-provided CONFIG_ACCESSOR token.
+        AgentService,
+        FileService,
+        SessionStoreService,
+        TerminalRegistryService,
+        PanelHostService,
+        ModelCatalogService,
         {
             provide: CONFIG_ACCESSOR,
             useFactory: (config: ConfigService) => () => ({ ...DEFAULT_CONFIG, ...(config.store?.[CONFIG_KEY] ?? {}) }),
