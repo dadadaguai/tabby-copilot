@@ -10,7 +10,7 @@ const CACHE_MS = 5 * 60_000
  * Fetches the model list from a configured OpenAI-compatible endpoint
  * (`GET /v1/models`) and caches it per endpoint+key for 5 minutes.
  */
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class ModelCatalogService {
     private cache: { endpoint: string, models: string[], at: number } | null = null
 

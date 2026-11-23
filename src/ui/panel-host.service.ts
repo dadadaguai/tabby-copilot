@@ -14,7 +14,7 @@ const STYLE_ID = 'tabby-copilot-layout-style'
  * tab bodies) so the tab bar keeps its full width and only terminals shrink.
  * If that element cannot be found, falls back to a fixed overlay on <body>.
  */
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class PanelHostService {
     visible = false
     private panelType: Type<CopilotPanelComponent> | null = null

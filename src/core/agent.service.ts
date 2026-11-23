@@ -30,7 +30,7 @@ export interface AgentState {
 
 const MAX_TOOL_ROUNDS = 80
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class AgentService {
     session: Session
     phase: AgentPhase = 'idle'

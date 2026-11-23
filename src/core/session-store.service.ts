@@ -16,7 +16,7 @@ interface IndexFile {
  * Persists sessions as JSON files next to Tabby's own config:
  *   <config dir>/tabby-copilot/sessions/<id>.json   (+ index.json)
  */
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class SessionStoreService {
     readonly rootDir: string
     readonly sessionsDir: string

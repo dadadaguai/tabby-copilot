@@ -82,7 +82,7 @@ export interface BufferCapture {
  * Knows about every terminal tab in the app, in visual order, and reads their
  * xterm buffers (anchored with markers) so the agent can see the screen.
  */
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class TerminalRegistryService {
     private entries = new Map<string, TerminalEntry>()
     private byTab = new WeakMap<BaseTerminalTabComponent<any>, TerminalEntry>()

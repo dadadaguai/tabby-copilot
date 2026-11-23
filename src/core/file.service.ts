@@ -13,7 +13,7 @@ const MAX_EXEC_OUTPUT = 200_000
  * - SSH tabs try `session.openSFTP()`, then fall back to an `exec` channel
  *   running `cat`/`sed`.
  */
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class FileService {
     /**
      * Normalize a path for whitelist matching and local file access: forward
