@@ -2,6 +2,13 @@
 
 所有显著变更都记录于此。版本规则：小功能 `0.0.x` 递增，功能累积升级 `0.x.0`。
 
+## v0.1.1 — 2026-11-23
+
+- 热键：approve（`Ctrl+Alt+Y`）/ deny（`Ctrl+Alt+X`）/ stop（`Ctrl+Alt+S`）/ newSession（`Ctrl+Alt+N`）。
+- 终端描述符级重连：会话记住绑定的终端，恢复时按 host/profile 匹配回原 Tab。
+- 纯函数拆分：`terminal-descriptor.ts`（describeTab / matchScore）脱离 Angular 依赖。
+- 单测：matchScore（4 例）。
+
 ## v0.1.0 — 2026-11-23
 
 - 打磨 + 全量测试：typecheck / build 通过，25 个测试（24 单测 + 1 流式冒烟）通过。

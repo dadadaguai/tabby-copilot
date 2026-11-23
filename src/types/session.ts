@@ -53,6 +53,20 @@ export type SessionMessage = UserMessage | AssistantMessage
 
 export const SESSION_SCHEMA_VERSION = 1
 
+export type TerminalKind = 'ssh' | 'local' | 'serial' | 'telnet' | 'other'
+
+/** Enough information to re-identify a terminal tab after a restart. */
+export interface TerminalDescriptor {
+    kind: TerminalKind
+    profileId?: string
+    profileName?: string
+    host?: string
+    port?: number
+    user?: string
+    title?: string
+    customTitle?: string
+}
+
 export interface SessionStats {
     turns: number
     toolCalls: number
@@ -69,6 +83,8 @@ export interface Session {
     updatedAt: string
     messages: SessionMessage[]
     approvalMode?: ApprovalMode
+    /** The terminal this session was last bound to (for re-attachment). */
+    terminal?: TerminalDescriptor
     stats: SessionStats
 }
 

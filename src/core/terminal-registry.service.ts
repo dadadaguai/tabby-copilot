@@ -3,6 +3,8 @@ import { BehaviorSubject, Observable, Subscription } from 'rxjs'
 import { AppService, SplitTabComponent } from 'tabby-core'
 import { BaseTerminalTabComponent } from 'tabby-terminal'
 import { looksLikeInputPrompt } from './util/prompt-detect'
+import { TerminalDescriptor } from '../types/session'
+import { describeTab } from './terminal-descriptor'
 
 /** An xterm.js marker: a line reference that follows the buffer as it scrolls/trims. */
 export interface XtermMarker {
@@ -227,6 +229,11 @@ export class TerminalRegistryService {
             return this.byTab.get(active) ?? this.register(active)
         }
         return null
+    }
+
+    /** A descriptor good enough to re-identify the tab after a restart. */
+    describe (entry: TerminalEntry): TerminalDescriptor {
+        return describeTab(entry.tab)
     }
 
     /** What the terminal is doing right now, from its screen text and output timing. */

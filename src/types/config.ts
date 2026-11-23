@@ -50,5 +50,9 @@ export const DEFAULT_CONFIG: CopilotConfig = {
 
 export const HOTKEY_IDS = {
     toggle: 'tabby-copilot-toggle',
+    approve: 'tabby-copilot-approve',
+    deny: 'tabby-copilot-deny',
+    stop: 'tabby-copilot-stop',
     focusInput: 'tabby-copilot-focus-input',
+    newSession: 'tabby-copilot-new-session',
 } as const

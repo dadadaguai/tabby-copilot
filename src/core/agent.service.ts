@@ -2,10 +2,11 @@ import { Inject, Injectable, NgZone } from '@angular/core'
 import { BehaviorSubject, Observable } from 'rxjs'
 import { CONFIG_ACCESSOR } from './config-token'
 import { CopilotConfig } from '../types/config'
-import { ApprovalMode, AssistantMessage, RunExitState, Session, ToolCallRecord, UserMessage } from '../types/session'
+import { ApprovalMode, AssistantMessage, RunExitState, Session, TerminalDescriptor, ToolCallRecord, UserMessage } from '../types/session'
 import { ChatMessage, ChatProvider, ToolSpec } from './llm/types'
 import { OpenAICompatibleProvider } from './llm/openai-compatible'
 import { TerminalRunner } from './terminal-runner'
+import { matchScore } from './terminal-descriptor'
 import { TerminalEntry, TerminalRegistryService } from './terminal-registry.service'
 import { FileService } from './file.service'
 import { SessionStoreService } from './session-store.service'
@@ -42,7 +43,7 @@ export class AgentService {
     private pendingApprovals = new Map<string, (approved: boolean) => void>()
     private pendingQuestion: { toolCallId: string, resolve: (answer: string) => void } | null = null
     private runner: TerminalRunner
-    private turnTerminal: TerminalEntry | null = null
+    private boundTerminalId: string | null = null
     private emitTimer: any = null
 
     get state$ (): Observable<AgentState> {
@@ -82,14 +83,14 @@ export class AgentService {
         await this.stopAndWait()
         if (isEmptySession(this.session) && !this.session.titleIsCustom) {
             this.session = createSession()
-            this.turnTerminal = null
+            this.boundTerminalId = null
             this.emit()
             return this.session
         }
         this.store.save(this.session)
         this.session = createSession()
         this.error = null
-        this.turnTerminal = null
+        this.boundTerminalId = null
         this.emit()
         return this.session
     }
@@ -108,7 +109,7 @@ export class AgentService {
         }
         this.session = loaded
         this.error = null
-        this.turnTerminal = null
+        this.boundTerminalId = this.matchTerminal(loaded.terminal)
         this.emit()
         return true
     }
@@ -153,7 +154,11 @@ export class AgentService {
             this.session.title = autoTitle(this.session)
         }
         this.error = null
-        this.turnTerminal = this.registry.getActive()
+        const active = this.registry.getActive()
+        if (active) {
+            this.session.terminal = this.registry.describe(active)
+            this.boundTerminalId = active.id
+        }
         this.touch()
         this.turnPromise = this.runTurn()
         try {
@@ -207,6 +212,20 @@ export class AgentService {
         }
         this.pendingApprovals.delete(toolCallId)
         resolve(false)
+    }
+
+    approveFirstPending (): void {
+        const first = this.pendingApprovals.keys().next()
+        if (!first.done) {
+            this.approve(first.value)
+        }
+    }
+
+    denyFirstPending (): void {
+        const first = this.pendingApprovals.keys().next()
+        if (!first.done) {
+            this.deny(first.value)
+        }
     }
 
     answer (toolCallId: string, text: string): void {
@@ -297,7 +316,6 @@ export class AgentService {
             }
             this.abortController = null
             this.pendingQuestion = null
-            this.turnTerminal = null
             this.setPhase('idle')
             this.touch()
         }
@@ -438,7 +456,28 @@ export class AgentService {
     }
 
     private currentTerminal (): TerminalEntry | null {
-        return this.turnTerminal && !this.turnTerminal.closed ? this.turnTerminal : this.registry.getActive()
+        if (this.boundTerminalId) {
+            const bound = this.registry.byId(this.boundTerminalId)
+            if (bound) {
+                return bound
+            }
+        }
+        return this.registry.getActive()
+    }
+
+    /** Re-attach a session's stored terminal descriptor to an open tab. */
+    private matchTerminal (desc?: TerminalDescriptor): string | null {
+        if (!desc) {
+            return null
+        }
+        let best: { id: string, score: number } | null = null
+        for (const entry of this.registry.list()) {
+            const score = matchScore(desc, this.registry.describe(entry))
+            if (score >= 3 && (!best || score > best.score)) {
+                best = { id: entry.id, score }
+            }
+        }
+        return best?.id ?? null
     }
 
     private makeToolContext (record: ToolCallRecord, signal: AbortSignal): ToolContext {

@@ -2,6 +2,7 @@ import { ApplicationRef, ComponentRef, EnvironmentInjector, Injectable, Injector
 import { AppService, ConfigService, HotkeysService } from 'tabby-core'
 import type { CopilotPanelComponent } from './panel/panel.component'
 import { CONFIG_KEY, DEFAULT_CONFIG, HOTKEY_IDS, PanelSide } from '../types/config'
+import { AgentService } from '../core/agent.service'
 
 const MIN_WIDTH = 300
 const STYLE_ID = 'tabby-copilot-layout-style'
@@ -31,6 +32,7 @@ export class PanelHostService {
         private config: ConfigService,
         private app: AppService,
         private hotkeys: HotkeysService,
+        private agent: AgentService,
         private zone: NgZone,
     ) {
         // config.store is not populated until the config has been loaded
@@ -110,8 +112,21 @@ export class PanelHostService {
             case HOTKEY_IDS.toggle:
                 this.toggle()
                 break
+            case HOTKEY_IDS.approve:
+                this.agent.approveFirstPending()
+                break
+            case HOTKEY_IDS.deny:
+                this.agent.denyFirstPending()
+                break
+            case HOTKEY_IDS.stop:
+                this.agent.stop()
+                break
             case HOTKEY_IDS.focusInput:
                 this.show()
+                break
+            case HOTKEY_IDS.newSession:
+                this.show()
+                void this.agent.newSession()
                 break
         }
     }

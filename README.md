@@ -67,5 +67,3 @@ src/
 ## 密钥与安全
 
 API key 只保存在 Tabby 的 `config.yaml` 中（或本地预览用的 `.env`，已被 `.gitignore` 忽略），**永不提交进仓库**。参见 `.env.example`。
-
-已知待办：approve/deny/stop/newSession 热键；终端描述符级会话重连（当前会话恢复统一作用在当前激活终端）。
