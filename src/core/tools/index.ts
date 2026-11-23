@@ -110,6 +110,9 @@ export const runCommandTool: AgentTool = {
             throw new Error('command must not be empty')
         }
         const t = ctx.getTerminal()
+        if (ctx.focusOnRun) {
+            ctx.focus(t)
+        }
         if (t.busyWith && t.busyWith !== ctx.toolCallId) {
             throw new Error(`Terminal "${t.label}" is busy with another command. Wait for it or use another terminal.`)
         }
@@ -172,6 +175,9 @@ export const sendKeysTool: AgentTool = {
             }
         }).join('')
         const t = ctx.getTerminal()
+        if (ctx.focusOnRun) {
+            ctx.focus(t)
+        }
         const timeoutS = Math.max(1, Math.min(600, num(args.timeout_seconds, 15)))
         const prevBusy = t.busyWith
         t.busyWith = ctx.toolCallId

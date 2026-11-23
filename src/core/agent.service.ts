@@ -150,7 +150,7 @@ export class AgentService {
         const user: UserMessage = { id: newId('m'), role: 'user', content, createdAt: nowIso() }
         this.session.messages.push(user)
         this.session.stats.turns++
-        if (!this.session.titleIsCustom && this.session.title === '新会话') {
+        if (this.settings.autoTitle && !this.session.titleIsCustom && this.session.title === '新会话') {
             this.session.title = autoTitle(this.session)
         }
         this.error = null
@@ -497,6 +497,7 @@ export class AgentService {
             mark: entry => this.registry.mark(entry),
             isAlternateScreen: entry => this.registry.isAlternateScreen(entry),
             focus: entry => this.registry.focus(entry),
+            focusOnRun: this.settings.focusTerminalOnRun,
             progress: text => {
                 record.progress = text
                 this.emitSoon()
@@ -573,6 +574,7 @@ export class AgentService {
     private buildMessages (): ChatMessage[] {
         return buildMessages(this.session.messages, {
             systemPrompt: systemPromptTemplate,
+            additionalSystemPrompt: this.settings.additionalSystemPrompt,
             maxToolResultChars: this.settings.maxToolResultChars,
             maxContextChars: this.settings.maxContextChars,
         })

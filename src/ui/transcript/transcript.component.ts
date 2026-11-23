@@ -27,6 +27,10 @@ export class TranscriptComponent implements OnInit, OnDestroy {
         }))
     }
 
+    get showReasoning (): boolean {
+        return this.agent.settings.showReasoning !== false
+    }
+
     ngOnDestroy (): void {
         this.sub.unsubscribe()
     }

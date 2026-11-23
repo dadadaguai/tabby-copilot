@@ -22,6 +22,20 @@
     <div class="hint">deepseek-chat（对话）或 deepseek-reasoner（推理）。</div>
   </div>
 
+  <div class="form-group">
+    <label for="copilot-extra-params">额外请求参数（JSON）</label>
+    <textarea id="copilot-extra-params" class="copilot-input" [(ngModel)]="c.extraParamsText" (ngModelChange)="save()"
+              rows="2" placeholder='{"temperature":0.2}'></textarea>
+    <div class="hint">追加到请求体，例如 temperature、max_tokens 等（非法 JSON 会被忽略）。</div>
+  </div>
+
+  <div class="form-group">
+    <label for="copilot-system-prompt">追加系统指令</label>
+    <textarea id="copilot-system-prompt" class="copilot-input" [(ngModel)]="c.additionalSystemPrompt" (ngModelChange)="save()"
+              rows="3" placeholder="例如：始终用中文回答、不要使用 sudo…"></textarea>
+    <div class="hint">会追加到内置系统指令之后，与内置指令一起发送给模型。</div>
+  </div>
+
   <h4>安全</h4>
 
   <div class="form-group">
@@ -33,5 +47,51 @@
       <option value="auto_all">自动放行全部（除毁灭性命令）</option>
     </select>
     <div class="hint">毁灭性命令（rm -rf /、mkfs、reboot 等）任何模式下都会强制确认。</div>
+  </div>
+
+  <div class="form-group">
+    <label for="copilot-timeout">默认命令超时（秒）</label>
+    <input id="copilot-timeout" type="number" class="copilot-input" min="1" max="3600"
+           [ngModel]="c.defaultCommandTimeout" (ngModelChange)="setInt('defaultCommandTimeout', $event)" />
+  </div>
+
+  <h4>面板</h4>
+
+  <div class="form-group">
+    <label for="copilot-side">面板位置</label>
+    <select id="copilot-side" class="copilot-input" [(ngModel)]="c.panelSide" (ngModelChange)="save()">
+      <option value="right">右侧</option>
+      <option value="left">左侧</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label for="copilot-fontsize">基准字号（9–24）</label>
+    <input id="copilot-fontsize" type="number" class="copilot-input" min="9" max="24"
+           [ngModel]="c.fontSize" (ngModelChange)="setInt('fontSize', $event)" />
+  </div>
+
+  <div class="form-group checkbox-group">
+    <label><input type="checkbox" [(ngModel)]="c.focusTerminalOnRun" (ngModelChange)="save()" /> 执行时切换到终端视图</label>
+  </div>
+  <div class="form-group checkbox-group">
+    <label><input type="checkbox" [(ngModel)]="c.showReasoning" (ngModelChange)="save()" /> 显示思考链折叠</label>
+  </div>
+  <div class="form-group checkbox-group">
+    <label><input type="checkbox" [(ngModel)]="c.autoTitle" (ngModelChange)="save()" /> 用首条消息自动命名会话</label>
+  </div>
+
+  <h4>上下文</h4>
+
+  <div class="form-group">
+    <label for="copilot-tool-chars">单条工具结果字符上限</label>
+    <input id="copilot-tool-chars" type="number" class="copilot-input" min="100"
+           [ngModel]="c.maxToolResultChars" (ngModelChange)="setInt('maxToolResultChars', $event)" />
+  </div>
+
+  <div class="form-group">
+    <label for="copilot-context-chars">上下文字符预算</label>
+    <input id="copilot-context-chars" type="number" class="copilot-input" min="1000"
+           [ngModel]="c.maxContextChars" (ngModelChange)="setInt('maxContextChars', $event)" />
   </div>
 </div>

@@ -19,6 +19,8 @@ export interface ToolContext {
     mark (entry: TerminalEntry): BufferPosition
     isAlternateScreen (entry: TerminalEntry): boolean
     focus (entry: TerminalEntry): void
+    /** Switch to the terminal the agent is acting on (config focusTerminalOnRun). */
+    focusOnRun: boolean
     progress (text: string): void
     setExitState (state: RunExitState): void
     askUser (question: string, choices?: string[]): Promise<string>

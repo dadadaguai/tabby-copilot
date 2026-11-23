@@ -4,6 +4,7 @@ import { truncateForModel } from './util/text'
 
 export interface PromptOptions {
     systemPrompt: string
+    additionalSystemPrompt: string
     maxToolResultChars: number
     maxContextChars: number
 }
@@ -14,7 +15,8 @@ export interface PromptOptions {
  * stays well-formed (every tool call must be answered).
  */
 export function buildMessages (messages: SessionMessage[], options: PromptOptions): ChatMessage[] {
-    const out: ChatMessage[] = [{ role: 'system', content: options.systemPrompt.trim() }]
+    const system = [options.systemPrompt.trim(), options.additionalSystemPrompt?.trim()].filter(Boolean).join('\n\n')
+    const out: ChatMessage[] = [{ role: 'system', content: system }]
     for (const m of messages) {
         if (m.role === 'user') {
             out.push({ role: 'user', content: m.content })

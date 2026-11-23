@@ -21,6 +21,13 @@ export class CopilotSettingsComponent implements OnInit {
         return this.config.store[CONFIG_KEY]
     }
 
+    setInt (key: keyof CopilotConfig, value: string): void {
+        const n = Number.parseInt(value, 10)
+        const fallback = (DEFAULT_CONFIG as any)[key]
+        ;(this.c as any)[key] = Number.isFinite(n) ? n : fallback
+        this.save()
+    }
+
     save (): void {
         this.config.save()
     }
