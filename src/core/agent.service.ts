@@ -2,12 +2,14 @@ import { Inject, Injectable, NgZone } from '@angular/core'
 import { BehaviorSubject, Observable } from 'rxjs'
 import { CONFIG_ACCESSOR } from './config-token'
 import { CopilotConfig } from '../types/config'
-import { ApprovalMode, AssistantMessage, RunExitState, SessionMessage, ToolCallRecord, UserMessage } from '../types/session'
+import { ApprovalMode, AssistantMessage, RunExitState, Session, ToolCallRecord, UserMessage } from '../types/session'
 import { ChatMessage, ChatProvider, ToolSpec } from './llm/types'
 import { OpenAICompatibleProvider } from './llm/openai-compatible'
 import { TerminalRunner } from './terminal-runner'
 import { TerminalEntry, TerminalRegistryService } from './terminal-registry.service'
 import { FileService } from './file.service'
+import { SessionStoreService } from './session-store.service'
+import { autoTitle, createSession, isEmptySession } from './session-utils'
 import { ALL_TOOLS, findTool } from './tools'
 import { ToolContext } from './tools/types'
 import { isAutoApproved } from './util/risk'
@@ -19,7 +21,7 @@ import systemPromptTemplate from '../prompts/system.md'
 export type AgentPhase = 'idle' | 'thinking' | 'tool' | 'awaiting_approval' | 'awaiting_user'
 
 export interface AgentState {
-    messages: SessionMessage[]
+    session: Session
     phase: AgentPhase
     error: string | null
     rev: number
@@ -29,11 +31,11 @@ const MAX_TOOL_ROUNDS = 80
 
 @Injectable({ providedIn: 'root' })
 export class AgentService {
-    messages: SessionMessage[] = []
+    session: Session
     phase: AgentPhase = 'idle'
     error: string | null = null
 
-    private state = new BehaviorSubject<AgentState>({ messages: [], phase: 'idle', error: null, rev: 0 })
+    private state = new BehaviorSubject<AgentState>({ session: createSession(), phase: 'idle', error: null, rev: 0 })
     private rev = 0
     private abortController: AbortController | null = null
     private turnPromise: Promise<void> | null = null
@@ -56,7 +58,9 @@ export class AgentService {
         private zone: NgZone,
         private registry: TerminalRegistryService,
         private fileService: FileService,
+        public store: SessionStoreService,
     ) {
+        this.session = this.state.value.session
         this.runner = new TerminalRunner(registry)
     }
 
@@ -69,8 +73,68 @@ export class AgentService {
     }
 
     get approvalMode (): ApprovalMode {
-        return this.settings.approvalMode
+        return this.session.approvalMode ?? this.settings.approvalMode
     }
+
+    // -------------------------------------------------------------- sessions
+
+    async newSession (): Promise<Session> {
+        await this.stopAndWait()
+        if (isEmptySession(this.session) && !this.session.titleIsCustom) {
+            this.session = createSession()
+            this.turnTerminal = null
+            this.emit()
+            return this.session
+        }
+        this.store.save(this.session)
+        this.session = createSession()
+        this.error = null
+        this.turnTerminal = null
+        this.emit()
+        return this.session
+    }
+
+    async openSession (id: string): Promise<boolean> {
+        if (id === this.session.id) {
+            return true
+        }
+        const loaded = this.store.load(id)
+        if (!loaded) {
+            return false
+        }
+        await this.stopAndWait()
+        if (!isEmptySession(this.session)) {
+            this.store.save(this.session)
+        }
+        this.session = loaded
+        this.error = null
+        this.turnTerminal = null
+        this.emit()
+        return true
+    }
+
+    renameSession (title: string): void {
+        const t = title.trim()
+        if (!t) {
+            return
+        }
+        this.session.title = t
+        this.session.titleIsCustom = true
+        this.touch()
+    }
+
+    async deleteSession (id: string): Promise<void> {
+        if (id === this.session.id) {
+            await this.newSession()
+        }
+        this.store.delete(id)
+    }
+
+    listSessions () {
+        return this.store.list()
+    }
+
+    // --------------------------------------------------- send / stop / gates
 
     async send (text: string): Promise<void> {
         const content = text.trim()
@@ -83,9 +147,12 @@ export class AgentService {
             return
         }
         const user: UserMessage = { id: newId('m'), role: 'user', content, createdAt: nowIso() }
-        this.messages.push(user)
+        this.session.messages.push(user)
+        this.session.stats.turns++
+        if (!this.session.titleIsCustom && this.session.title === '新会话') {
+            this.session.title = autoTitle(this.session)
+        }
         this.error = null
-        // bind the turn to the terminal that is active when the user sends
         this.turnTerminal = this.registry.getActive()
         this.touch()
         this.turnPromise = this.runTurn()
@@ -105,6 +172,18 @@ export class AgentService {
             this.pendingApprovals.delete(id)
         }
         this.abortController?.abort()
+    }
+
+    async stopAndWait (): Promise<void> {
+        if (!this.busy) {
+            return
+        }
+        this.stop()
+        try {
+            await this.turnPromise
+        } catch {
+            // the turn handles its own errors
+        }
     }
 
     clearError (): void {
@@ -173,7 +252,7 @@ export class AgentService {
                     createdAt: nowIso(),
                     model: this.settings.model || undefined,
                 }
-                this.messages.push(assistant)
+                this.session.messages.push(assistant)
                 this.setPhase('thinking')
                 const calls = await this.streamAssistant(provider, assistant, toolSpecs, signal)
                 if (!assistant.reasoning) {
@@ -210,11 +289,10 @@ export class AgentService {
                 console.error('[tabby-copilot] turn failed', e)
             }
         } finally {
-            // drop an assistant message that never produced anything
             if (assistant && !assistant.content && !assistant.toolCalls.length && !assistant.error && !assistant.interrupted) {
-                const i = this.messages.indexOf(assistant)
+                const i = this.session.messages.indexOf(assistant)
                 if (i >= 0) {
-                    this.messages.splice(i, 1)
+                    this.session.messages.splice(i, 1)
                 }
             }
             this.abortController = null
@@ -256,6 +334,10 @@ export class AgentService {
                     break
                 }
                 case 'usage':
+                    assistant.usage = { prompt: evt.prompt, completion: evt.completion }
+                    this.session.stats.promptTokens += evt.prompt
+                    this.session.stats.completionTokens += evt.completion
+                    break
                 case 'done':
                     break
             }
@@ -282,6 +364,7 @@ export class AgentService {
             return record
         })
         assistant.toolCalls = records
+        this.session.stats.toolCalls += records.length
         return records
     }
 
@@ -449,9 +532,10 @@ export class AgentService {
     // ------------------------------------------------------- prompt building
 
     private buildMessages (): ChatMessage[] {
-        return buildMessages(this.messages, {
+        return buildMessages(this.session.messages, {
             systemPrompt: systemPromptTemplate,
             maxToolResultChars: this.settings.maxToolResultChars,
+            maxContextChars: this.settings.maxContextChars,
         })
     }
 
@@ -465,6 +549,8 @@ export class AgentService {
     }
 
     private touch (): void {
+        this.session.updatedAt = nowIso()
+        this.store.save(this.session)
         this.emit()
     }
 
@@ -474,7 +560,7 @@ export class AgentService {
             this.emitTimer = null
         }
         this.rev++
-        this.zone.run(() => this.state.next({ messages: this.messages, phase: this.phase, error: this.error, rev: this.rev }))
+        this.zone.run(() => this.state.next({ session: this.session, phase: this.phase, error: this.error, rev: this.rev }))
     }
 
     /** Coalesce bursts (streaming tokens) into ~25 updates per second. */

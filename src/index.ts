@@ -22,6 +22,7 @@ import { CopilotSettingsComponent } from './ui/settings/settings.component'
 import { TranscriptComponent } from './ui/transcript/transcript.component'
 import { ToolCallComponent } from './ui/transcript/tool-call.component'
 import { ComposerComponent } from './ui/composer/composer.component'
+import { SessionListComponent } from './ui/sessions/session-list.component'
 import { CopilotMarkdownPipe } from './ui/pipes/markdown.pipe'
 
 /** @hidden */
@@ -50,6 +51,7 @@ import { CopilotMarkdownPipe } from './ui/pipes/markdown.pipe'
         TranscriptComponent,
         ToolCallComponent,
         ComposerComponent,
+        SessionListComponent,
         CopilotMarkdownPipe,
     ],
 })

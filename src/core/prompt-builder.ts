@@ -5,6 +5,7 @@ import { truncateForModel } from './util/text'
 export interface PromptOptions {
     systemPrompt: string
     maxToolResultChars: number
+    maxContextChars: number
 }
 
 /**
@@ -27,13 +28,76 @@ export function buildMessages (messages: SessionMessage[], options: PromptOption
                 let content: string
                 if (tc.status === 'cancelled') {
                     content = 'Cancelled by the user before it completed.'
-                } else if (tc.status === 'pending_approval' || tc.status === 'running') {
+                } else if (tc.status === 'pending_approval' || tc.status === 'running' || tc.status === 'awaiting_user') {
                     content = 'Interrupted before completion.'
                 } else {
                     content = tc.result ?? tc.error ?? '(no result)'
                 }
                 out.push({ role: 'tool', toolCallId: tc.id, name: tc.name, content: truncateForModel(content, options.maxToolResultChars).text })
             }
+        }
+    }
+    return fitContextBudget(out, options.maxContextChars)
+}
+
+export function messagesSize (list: ChatMessage[]): number {
+    return list.reduce((n, m) => n + (typeof m.content === 'string' ? m.content.length : 0) + 40, 0)
+}
+
+/**
+ * Keep the prompt under a character budget: elide old tool output first,
+ * then drop the oldest exchanges (never the system prompt or the last user turn).
+ */
+export function fitContextBudget (messages: ChatMessage[], maxChars: number): ChatMessage[] {
+    if (messagesSize(messages) <= maxChars) {
+        return messages
+    }
+    const out: ChatMessage[] = messages.map(m => ({ ...m }))
+    const lastUserIdx = (() => {
+        for (let i = out.length - 1; i >= 0; i--) {
+            if (out[i].role === 'user') {
+                return i
+            }
+        }
+        return out.length
+    })()
+    // 1. elide old tool results, oldest first
+    for (let i = 1; i < lastUserIdx && messagesSize(out) > maxChars; i++) {
+        const m = out[i]
+        if (m.role === 'tool' && m.content.length > 200) {
+            out[i] = { ...m, content: `[earlier output elided to save context – ${m.content.length} chars]` }
+        }
+    }
+    // 2. drop the oldest exchanges, keeping tool results together with their call
+    let dropped = false
+    while (messagesSize(out) > maxChars) {
+        const lastUser = (() => {
+            for (let i = out.length - 1; i >= 0; i--) {
+                if (out[i].role === 'user') {
+                    return i
+                }
+            }
+            return -1
+        })()
+        if (1 >= lastUser) {
+            break
+        }
+        const m = out[1]
+        out.splice(1, 1)
+        if (m.role === 'assistant' && m.toolCalls?.length) {
+            while (out[1] && out[1].role === 'tool') {
+                out.splice(1, 1)
+            }
+        }
+        dropped = true
+    }
+    if (dropped) {
+        const notice = '[earlier conversation truncated to fit the context window]'
+        const first = out[1]
+        if (first && first.role === 'user') {
+            out[1] = { ...first, content: `${notice}\n\n${first.content}` }
+        } else {
+            out.splice(1, 0, { role: 'user', content: notice })
         }
     }
     return out

@@ -22,7 +22,7 @@ export class TranscriptComponent implements OnInit, OnDestroy {
     ngOnInit (): void {
         this.sub.add(this.agent.state$.subscribe(s => {
             this.state = s
-            this.messages = s.messages
+            this.messages = s.session.messages
             this.scrollToBottomIfAttached()
         }))
     }

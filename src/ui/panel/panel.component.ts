@@ -17,6 +17,7 @@ export class CopilotPanelComponent implements OnInit, OnDestroy {
     status = ''
     lastLine = ''
     error: string | null = null
+    showSessions = false
     @ViewChild(ComposerComponent) composer?: ComposerComponent
 
     private sub = new Subscription()
@@ -57,6 +58,10 @@ export class CopilotPanelComponent implements OnInit, OnDestroy {
         }
     }
 
+    get sessionTitle (): string {
+        return this.agent.session.title
+    }
+
     close (): void {
         this.host.hide()
     }
@@ -71,6 +76,23 @@ export class CopilotPanelComponent implements OnInit, OnDestroy {
 
     focusComposer (): void {
         this.composer?.focus()
+    }
+
+    toggleSessions (): void {
+        this.showSessions = !this.showSessions
+    }
+
+    async newSession (): Promise<void> {
+        await this.agent.newSession()
+        this.showSessions = false
+        this.focusComposer()
+    }
+
+    async openSession (id: string): Promise<void> {
+        if (await this.agent.openSession(id)) {
+            this.showSessions = false
+            this.focusComposer()
+        }
     }
 
     private refreshTerminal (): void {
