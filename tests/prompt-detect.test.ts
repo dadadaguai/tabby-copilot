@@ -37,6 +37,8 @@ test('looksLikeInputPrompt detects password and confirm prompts', () => {
     assert.ok(looksLikeInputPrompt('Are you sure you want to delete it?'))
     assert.ok(looksLikeInputPrompt('--More--'))
     assert.ok(!looksLikeInputPrompt('user@host:~$'))
+    assert.ok(!looksLikeInputPrompt('error: cannot connect to host'))
+    assert.ok(!looksLikeInputPrompt('total 42'))
 })
 
 test('stripEchoAndPrompt removes the command echo and trailing prompt', () => {

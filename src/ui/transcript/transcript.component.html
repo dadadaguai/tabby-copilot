@@ -11,7 +11,7 @@
       </div>
 
       <div class="msg assistant" *ngIf="m.role === 'assistant'" [class.streaming]="isStreaming(m)">
-        <div class="reasoning" *ngIf="m.reasoning">
+        <div class="reasoning" *ngIf="m.reasoning && showReasoning">
           <button class="reasoning-toggle" type="button" (click)="toggleReasoning(m)">
             <i class="fas" [class.fa-chevron-right]="!reasoningExpanded(m)" [class.fa-chevron-down]="reasoningExpanded(m)"></i>
             思考过程

@@ -19,12 +19,14 @@ export interface ToolContext {
     mark (entry: TerminalEntry): BufferPosition
     isAlternateScreen (entry: TerminalEntry): boolean
     focus (entry: TerminalEntry): void
+    /** Switch to the terminal the agent is acting on (config focusTerminalOnRun). */
+    focusOnRun: boolean
     progress (text: string): void
     setExitState (state: RunExitState): void
     askUser (question: string, choices?: string[]): Promise<string>
     isPathAllowed (path: string): boolean
     grantPath (path: string): void
-    readFile (path: string, lines?: number): Promise<string>
+    readFile (path: string, lines?: number, offset?: number): Promise<string>
     listDir (path: string): Promise<string>
     requestApproval (message: string): Promise<boolean>
 }

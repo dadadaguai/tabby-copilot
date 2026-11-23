@@ -29,8 +29,6 @@ export const INPUT_PROMPT_PATTERNS: RegExp[] = [
     /press (enter|return|any key)/i,
     /are you sure[^\n]*\?\s*$/i,
     /continue connecting \(yes\/no(\/\[fingerprint\])?\)\?\s*$/i,
-    /:\s*$/,                   // generic "Something:" waiting for a value
-    /\?\s*$/,                  // generic question
     /^--More--/i,
     /\(END\)\s*$/,
 ]

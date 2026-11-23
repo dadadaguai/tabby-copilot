@@ -1,6 +1,7 @@
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core'
+import { Component, ElementRef, EventEmitter, OnDestroy, OnInit, Output, ViewChild } from '@angular/core'
 import { Subscription } from 'rxjs'
 import { AgentService, AgentState } from '../../core/agent.service'
+import { TerminalRegistryService } from '../../core/terminal-registry.service'
 import { AssistantMessage, SessionMessage } from '../../types/session'
 
 @Component({
@@ -13,11 +14,12 @@ export class TranscriptComponent implements OnInit, OnDestroy {
     state!: AgentState
     messages: SessionMessage[] = []
     expandedReasoning = new Set<string>()
+    @Output() fill = new EventEmitter<string>()
     /** Scrolled up, away from the newest content. */
     detached = false
     private sub = new Subscription()
 
-    constructor (public agent: AgentService) {}
+    constructor (public agent: AgentService, private registry: TerminalRegistryService) {}
 
     ngOnInit (): void {
         this.sub.add(this.agent.state$.subscribe(s => {
@@ -25,6 +27,10 @@ export class TranscriptComponent implements OnInit, OnDestroy {
             this.messages = s.session.messages
             this.scrollToBottomIfAttached()
         }))
+    }
+
+    get showReasoning (): boolean {
+        return this.agent.settings.showReasoning !== false
     }
 
     ngOnDestroy (): void {
@@ -79,6 +85,16 @@ export class TranscriptComponent implements OnInit, OnDestroy {
             const original = button.textContent
             button.textContent = 'Copied'
             setTimeout(() => { button.textContent = original }, 1200)
+        } else if (button.dataset.action === 'fill') {
+            this.fill.emit(code)
+        } else if (button.dataset.action === 'run') {
+            const target = this.registry.getActive()
+            if (target) {
+                this.registry.sendInput(target, code)
+                const original = button.textContent
+                button.textContent = 'Sent'
+                setTimeout(() => { button.textContent = original }, 1200)
+            }
         }
     }
 

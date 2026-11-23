@@ -55,7 +55,7 @@ export class TerminalRunner {
         const promptLine = this.host.cursorLine(entry)
         const terminator = learnPromptTerminator(promptLine)
         const seqAtStart = entry.outputSeq
-        this.host.sendInput(entry, command.replace(/\r?\n/g, '\r') + '\r')
+        this.host.sendInput(entry, command.replace(/\r?\n/g, '\n') + '\r')
         return this.observe(entry, { ...options, start, seqAtStart, command, terminator })
     }
 

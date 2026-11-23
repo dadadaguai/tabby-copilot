@@ -123,6 +123,25 @@ export class SessionStoreService {
         this.scheduleFlush()
     }
 
+    /** Load every persisted session (used for per-terminal re-attachment). */
+    scanSessions (): Session[] {
+        const sessions: Session[] = []
+        let files: string[] = []
+        try {
+            files = fs.readdirSync(this.sessionsDir).filter(f => f.endsWith('.json'))
+        } catch {
+            files = []
+        }
+        for (const f of files) {
+            try {
+                sessions.push(migrate(JSON.parse(fs.readFileSync(path.join(this.sessionsDir, f), 'utf8'))))
+            } catch (e) {
+                console.warn('[tabby-copilot] skipping unreadable session file', f, e)
+            }
+        }
+        return sessions
+    }
+
     private fileFor (id: string): string {
         return path.join(this.sessionsDir, `${sanitizeId(id)}.json`)
     }
@@ -203,6 +222,7 @@ function migrate (raw: any): Session {
         session.version = SESSION_SCHEMA_VERSION
     }
     session.messages ??= []
+    session.fileWhitelist ??= []
     session.stats ??= { turns: 0, toolCalls: 0, promptTokens: 0, completionTokens: 0 }
     return session
 }

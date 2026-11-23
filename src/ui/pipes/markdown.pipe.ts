@@ -14,6 +14,8 @@ renderer.code = (code: string, infostring: string | undefined): string => {
     return `<div class="code-block"${langAttr}>` +
         `<div class="code-actions">` +
         (lang ? `<span class="code-lang">${escapeHtml(lang)}</span>` : '') +
+        `<button type="button" class="code-action" data-action="run" title="投递到当前终端（不回车）">▶</button>` +
+        `<button type="button" class="code-action" data-action="fill" title="填入输入框">✎</button>` +
         `<button type="button" class="code-action" data-action="copy" title="Copy">Copy</button>` +
         `</div><pre><code>${escapeHtml(code)}</code></pre></div>`
 }

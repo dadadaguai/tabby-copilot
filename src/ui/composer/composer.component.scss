@@ -55,10 +55,32 @@
     .footer {
         display: flex;
         align-items: center;
+        gap: 8px;
         margin-top: 6px;
         font-size: .8em;
         opacity: .6;
 
-        .model { font-family: var(--copilot-mono); }
+        .model-select {
+            max-width: 220px;
+            padding: 2px 4px;
+            font: inherit;
+            font-family: var(--copilot-mono);
+            color: inherit;
+            background: var(--copilot-surface);
+            border: 1px solid var(--copilot-border);
+            border-radius: 5px;
+        }
+        .tokens { white-space: nowrap; }
+
+        .approval-mode {
+            margin-left: auto;
+            max-width: 240px;
+            padding: 2px 4px;
+            font: inherit;
+            color: inherit;
+            background: var(--copilot-surface);
+            border: 1px solid var(--copilot-border);
+            border-radius: 5px;
+        }
     }
 }

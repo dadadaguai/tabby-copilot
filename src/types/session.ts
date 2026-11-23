@@ -83,6 +83,8 @@ export interface Session {
     updatedAt: string
     messages: SessionMessage[]
     approvalMode?: ApprovalMode
+    /** Path prefixes authorized for this session's file reads (persisted). */
+    fileWhitelist?: string[]
     /** The terminal this session was last bound to (for re-attachment). */
     terminal?: TerminalDescriptor
     stats: SessionStats

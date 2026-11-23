@@ -88,11 +88,17 @@ export class TerminalRegistryService {
     private byTab = new WeakMap<BaseTerminalTabComponent<any>, TerminalEntry>()
     private subs = new Map<string, Subscription[]>()
     private changed = new BehaviorSubject<TerminalEntry[]>([])
+    private activeId = new BehaviorSubject<string | null>(null)
     private seq = 0
 
     /** Emits the ordered terminal list whenever tabs, titles, status or output change. */
     get changed$ (): Observable<TerminalEntry[]> {
         return this.changed.asObservable()
+    }
+
+    /** Emits the id of the active terminal tab whenever it changes. */
+    get activeId$ (): Observable<string | null> {
+        return this.activeId.asObservable()
     }
 
     constructor (
@@ -468,7 +474,14 @@ export class TerminalRegistryService {
     private emitTimer: any = null
 
     private emit (): void {
-        this.zone.run(() => this.changed.next(this.list()))
+        this.zone.run(() => {
+            this.changed.next(this.list())
+            const active = this.getActive()
+            const id = active?.id ?? null
+            if (id !== this.activeId.value) {
+                this.activeId.next(id)
+            }
+        })
     }
 
     private emitSoon (): void {
