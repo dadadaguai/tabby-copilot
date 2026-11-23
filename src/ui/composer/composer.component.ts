@@ -1,6 +1,7 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core'
 import { Subscription } from 'rxjs'
 import { AgentService, AgentState } from '../../core/agent.service'
+import { ApprovalMode } from '../../types/session'
 
 @Component({
     selector: 'copilot-composer',
@@ -33,6 +34,18 @@ export class ComposerComponent implements OnInit, OnDestroy {
 
     get model (): string {
         return this.agent.settings.model || 'deepseek-chat'
+    }
+
+    get approvalMode (): string {
+        return this.agent.session.approvalMode ?? ''
+    }
+
+    setApprovalMode (value: string): void {
+        this.agent.setApprovalMode((value === '' ? '' : value) as ApprovalMode | '')
+    }
+
+    get tokens (): number {
+        return (this.state?.session.stats.promptTokens ?? 0) + (this.state?.session.stats.completionTokens ?? 0)
     }
 
     focus (): void {

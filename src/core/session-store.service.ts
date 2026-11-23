@@ -203,6 +203,7 @@ function migrate (raw: any): Session {
         session.version = SESSION_SCHEMA_VERSION
     }
     session.messages ??= []
+    session.fileWhitelist ??= []
     session.stats ??= { turns: 0, toolCalls: 0, promptTokens: 0, completionTokens: 0 }
     return session
 }

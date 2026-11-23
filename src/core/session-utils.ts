@@ -10,6 +10,7 @@ export function createSession (): Session {
         createdAt: now,
         updatedAt: now,
         messages: [],
+        fileWhitelist: [],
         stats: { turns: 0, toolCalls: 0, promptTokens: 0, completionTokens: 0 },
     }
 }

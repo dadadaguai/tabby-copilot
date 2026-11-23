@@ -70,16 +70,25 @@ export class FileService {
         return s
     }
 
+    /** Canonical form of a path: home-expanded, normalized, `..` resolved. */
+    canonical (p: string): string {
+        return this.normalize(this.expandHome(p))
+    }
+
+    /** Test a path against an explicit whitelist (session-scoped). */
+    isAllowedList (wl: string[], p: string): boolean {
+        const target = this.canonical(p)
+        return (wl ?? []).some(prefix => target === prefix || target.startsWith(prefix + '/'))
+    }
+
     isAllowed (entry: TerminalEntry, p: string): boolean {
-        const target = this.normalize(this.expandHome(p))
-        const wl = entry.fileWhitelist ?? []
-        return wl.some(prefix => target === prefix || target.startsWith(prefix + '/'))
+        return this.isAllowedList(entry.fileWhitelist ?? [], p)
     }
 
     /** Grant access to a directory prefix. */
     grant (entry: TerminalEntry, dir: string): void {
         entry.fileWhitelist ??= []
-        const target = this.normalize(this.expandHome(dir))
+        const target = this.canonical(dir)
         if (!entry.fileWhitelist.includes(target)) {
             entry.fileWhitelist.push(target)
         }

@@ -77,6 +77,15 @@ export class AgentService {
         return this.session.approvalMode ?? this.settings.approvalMode
     }
 
+    setApprovalMode (mode: ApprovalMode | ''): void {
+        if (mode === '') {
+            delete this.session.approvalMode
+        } else {
+            this.session.approvalMode = mode
+        }
+        this.touch()
+    }
+
     // -------------------------------------------------------------- sessions
 
     async newSession (): Promise<Session> {
@@ -524,10 +533,14 @@ export class AgentService {
                 })
             },
             isPathAllowed: path => {
-                const t = this.currentTerminal()
-                return !!t && this.fileService.isAllowed(t, path)
+                return this.fileService.isAllowedList(this.session.fileWhitelist ?? [], path)
             },
             grantPath: path => {
+                const canonical = this.fileService.canonical(path)
+                this.session.fileWhitelist ??= []
+                if (!this.session.fileWhitelist.includes(canonical)) {
+                    this.session.fileWhitelist.push(canonical)
+                }
                 const t = this.currentTerminal()
                 if (t) {
                     this.fileService.grant(t, path)

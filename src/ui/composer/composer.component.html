@@ -12,5 +12,13 @@
   </div>
   <div class="footer">
     <span class="model">{{ model }}</span>
+    <span class="tokens">{{ tokens }} tokens</span>
+    <select class="approval-mode" [ngModel]="approvalMode" (ngModelChange)="setApprovalMode($event)" title="审批模式">
+      <option value="">审批：跟随全局（{{ agent.settings.approvalMode }}）</option>
+      <option value="ask">审批：每次询问</option>
+      <option value="auto_low">审批：自动放行低风险</option>
+      <option value="auto_medium">审批：自动放行低+中风险</option>
+      <option value="auto_all">审批：自动放行全部</option>
+    </select>
   </div>
 </div>
