@@ -78,6 +78,10 @@ export class CopilotPanelComponent implements OnInit, OnDestroy {
         this.composer?.focus()
     }
 
+    onFill (text: string): void {
+        this.composer?.fill(text)
+    }
+
     toggleSessions (): void {
         this.showSessions = !this.showSessions
     }

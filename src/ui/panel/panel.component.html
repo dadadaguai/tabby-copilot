@@ -32,7 +32,7 @@
     <span class="term-last-line" [title]="lastLine">{{ lastLine }}</span>
   </div>
 
-  <copilot-transcript></copilot-transcript>
+  <copilot-transcript (fill)="onFill($event)"></copilot-transcript>
 
   <div class="error-bar" *ngIf="error">
     <i class="fas fa-exclamation-triangle"></i>

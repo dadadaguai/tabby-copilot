@@ -90,6 +90,12 @@ export class ComposerComponent implements OnInit, OnDestroy {
         this.textarea?.nativeElement.focus()
     }
 
+    fill (text: string): void {
+        this.draft = text ?? ''
+        this.onInput()
+        this.focus()
+    }
+
     send (): void {
         if (!this.canSend) {
             return
