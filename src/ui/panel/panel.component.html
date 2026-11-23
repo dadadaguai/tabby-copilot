@@ -1,0 +1,26 @@
+<div class="copilot-panel" [class.side-left]="side === 'left'" [class.side-right]="side === 'right'">
+  <div class="resize-handle" (mousedown)="startResize($event)" title="Drag to resize"></div>
+
+  <header class="panel-header">
+    <div class="title-area">
+      <span class="brand">Copilot</span>
+      <span class="subtitle" *ngIf="active">{{ active.label }} · {{ active.connection }}</span>
+      <span class="subtitle muted" *ngIf="!active">未检测到终端</span>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" type="button" (click)="openSettings()" title="设置">
+        <i class="fas fa-cog"></i>
+      </button>
+      <button class="icon-btn" type="button" (click)="close()" title="关闭">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  </header>
+
+  <div class="panel-body">
+    <div class="placeholder">
+      <p>面板已挂载到右侧，当前绑定终端：<strong>{{ active?.label ?? '—' }}</strong></p>
+      <p class="muted">Pi 式 Agent 内核、线性流对话、终端执行与文件白名单将在 v0.0.3 起逐步接入。</p>
+    </div>
+  </div>
+</div>

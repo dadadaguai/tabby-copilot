@@ -1,0 +1,22 @@
+// Global styles for the Copilot panel. Everything is scoped under
+// .tabby-copilot-wrapper so nothing leaks into Tabby's own UI.
+
+.tabby-copilot-wrapper {
+    --copilot-bg: var(--theme-bg, var(--bs-body-bg, #1b1e23));
+    --copilot-fg: var(--theme-fg, var(--bs-body-color, #dfe3e8));
+    --copilot-surface: rgba(127, 127, 127, 0.10);
+    --copilot-surface-2: rgba(127, 127, 127, 0.18);
+    --copilot-surface-3: rgba(127, 127, 127, 0.26);
+    --copilot-border: rgba(127, 127, 127, 0.28);
+    --copilot-accent: var(--theme-primary, var(--bs-primary, #4d9be6));
+    --copilot-danger: var(--theme-danger, var(--bs-danger, #e5484d));
+    --copilot-warning: var(--theme-warning, var(--bs-warning, #f5a524));
+    --copilot-success: var(--theme-success, var(--bs-success, #3ecf8e));
+    --copilot-info: var(--theme-info, var(--bs-info, #58a6ff));
+    --copilot-mono: var(--bs-font-monospace, "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace);
+
+    font-family: var(--bs-body-font-family, system-ui, -apple-system, "Segoe UI", sans-serif);
+    color: var(--copilot-fg);
+
+    * { box-sizing: border-box; }
+}

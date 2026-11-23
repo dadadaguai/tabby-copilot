@@ -1,0 +1,37 @@
+<div class="copilot-settings">
+  <h4>模型连接</h4>
+
+  <div class="form-group">
+    <label for="copilot-endpoint">Endpoint</label>
+    <input id="copilot-endpoint" type="text" class="copilot-input" [(ngModel)]="c.endpoint" (ngModelChange)="save()"
+           placeholder="https://api.deepseek.com" />
+    <div class="hint">OpenAI 兼容端点，例如 https://api.deepseek.com、https://openrouter.ai/api，或本地 http://localhost:11434。</div>
+  </div>
+
+  <div class="form-group">
+    <label for="copilot-apikey">API Key</label>
+    <input id="copilot-apikey" type="password" class="copilot-input" [(ngModel)]="c.apiKey" (ngModelChange)="save()"
+           placeholder="sk-…" />
+    <div class="hint">只发送到你配置的端点，保存在 Tabby 的 config.yaml 中，请勿提交到 git。</div>
+  </div>
+
+  <div class="form-group">
+    <label for="copilot-model">Model</label>
+    <input id="copilot-model" type="text" class="copilot-input" [(ngModel)]="c.model" (ngModelChange)="save()"
+           placeholder="deepseek-chat" />
+    <div class="hint">deepseek-chat（对话）或 deepseek-reasoner（推理）。</div>
+  </div>
+
+  <h4>安全</h4>
+
+  <div class="form-group">
+    <label for="copilot-approval">默认审批模式</label>
+    <select id="copilot-approval" class="copilot-input" [(ngModel)]="c.approvalMode" (ngModelChange)="save()">
+      <option value="ask">每次询问</option>
+      <option value="auto_low">自动放行低风险</option>
+      <option value="auto_medium">自动放行低 + 中风险</option>
+      <option value="auto_all">自动放行全部（除毁灭性命令）</option>
+    </select>
+    <div class="hint">毁灭性命令（rm -rf /、mkfs、reboot 等）任何模式下都会强制确认。</div>
+  </div>
+</div>

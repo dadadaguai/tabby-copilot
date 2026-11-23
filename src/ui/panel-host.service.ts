@@ -1,0 +1,238 @@
+import { ApplicationRef, ComponentRef, EnvironmentInjector, Injectable, Injector, NgZone, Type, createComponent } from '@angular/core'
+import { AppService, ConfigService, HotkeysService } from 'tabby-core'
+import type { CopilotPanelComponent } from './panel/panel.component'
+import { CONFIG_KEY, DEFAULT_CONFIG, HOTKEY_IDS, PanelSide } from '../types/config'
+
+const MIN_WIDTH = 300
+const STYLE_ID = 'tabby-copilot-layout-style'
+
+/**
+ * Mounts the panel as a docked sidebar.
+ *
+ * Preferred mount point is Tabby's inner `.content` (the area that holds the
+ * tab bodies) so the tab bar keeps its full width and only terminals shrink.
+ * If that element cannot be found, falls back to a fixed overlay on <body>.
+ */
+@Injectable({ providedIn: 'root' })
+export class PanelHostService {
+    visible = false
+    private panelType: Type<CopilotPanelComponent> | null = null
+    private ref: ComponentRef<CopilotPanelComponent> | null = null
+    private wrapper: HTMLElement | null = null
+    private mountedTo: 'content' | 'body' | null = null
+    private width = DEFAULT_CONFIG.panelWidth
+    private side: PanelSide = 'right'
+    private fontSize = DEFAULT_CONFIG.fontSize
+
+    constructor (
+        private appRef: ApplicationRef,
+        private envInjector: EnvironmentInjector,
+        private injector: Injector,
+        private config: ConfigService,
+        private app: AppService,
+        private hotkeys: HotkeysService,
+        private zone: NgZone,
+    ) {
+        // config.store is not populated until the config has been loaded
+        this.config.ready$.subscribe({ complete: () => {
+            this.readConfig()
+            this.config.changed$.subscribe(() => {
+                const prevSide = this.side
+                const prevFont = this.fontSize
+                this.readConfig()
+                if (this.visible && (prevSide !== this.side || prevFont !== this.fontSize)) {
+                    this.applyLayout()
+                }
+            })
+            this.app.ready$.subscribe(() => {
+                if (this.config.store[CONFIG_KEY]?.panelVisible) {
+                    // give Tabby a moment to render its layout
+                    setTimeout(() => this.show(), 300)
+                }
+            })
+        } })
+        this.hotkeys.hotkey$.subscribe(id => this.zone.run(() => this.runHotkey(id)))
+    }
+
+    /** Called once by the module so this service never has to import the component. */
+    registerPanelComponent (type: Type<CopilotPanelComponent>): void {
+        this.panelType = type
+    }
+
+    toggle (): void {
+        if (this.visible) {
+            this.hide()
+        } else {
+            this.show()
+        }
+    }
+
+    show (): void {
+        if (!this.visible) {
+            this.mount()
+            this.visible = true
+            this.persist({ panelVisible: true })
+        }
+    }
+
+    hide (): void {
+        if (!this.visible) {
+            return
+        }
+        this.unmount()
+        this.visible = false
+        this.persist({ panelVisible: false })
+    }
+
+    /** Live width while dragging (not persisted). */
+    setWidth (px: number): void {
+        const max = Math.max(MIN_WIDTH, Math.floor(window.innerWidth * 0.8))
+        this.width = Math.max(MIN_WIDTH, Math.min(max, Math.round(px)))
+        this.applyLayout()
+    }
+
+    commitWidth (): void {
+        this.persist({ panelWidth: this.width })
+    }
+
+    get currentWidth (): number {
+        return this.width
+    }
+
+    get currentSide (): PanelSide {
+        return this.side
+    }
+
+    /** Dispatch one of the panel's hotkeys by id. */
+    runHotkey (id: string): void {
+        switch (id) {
+            case HOTKEY_IDS.toggle:
+                this.toggle()
+                break
+            case HOTKEY_IDS.focusInput:
+                this.show()
+                break
+        }
+    }
+
+    private readConfig (): void {
+        const c = this.config.store?.[CONFIG_KEY] ?? {}
+        this.width = Math.max(MIN_WIDTH, c.panelWidth ?? DEFAULT_CONFIG.panelWidth)
+        this.side = c.panelSide === 'left' ? 'left' : 'right'
+        const font = Number(c.fontSize)
+        this.fontSize = Number.isFinite(font) && font >= 9 && font <= 24 ? font : DEFAULT_CONFIG.fontSize
+    }
+
+    private persist (patch: Record<string, any>): void {
+        if (!this.config.store) {
+            return
+        }
+        this.config.store[CONFIG_KEY] ??= {}
+        Object.assign(this.config.store[CONFIG_KEY], patch)
+        this.config.save()
+    }
+
+    private mount (): void {
+        if (this.wrapper || !this.panelType) {
+            return
+        }
+        const contentArea = findTabContentArea()
+        const wrapper = document.createElement('div')
+        wrapper.className = 'tabby-copilot-wrapper'
+        this.wrapper = wrapper
+
+        this.ref = createComponent(this.panelType, {
+            environmentInjector: this.envInjector,
+            elementInjector: this.injector,
+        })
+        this.appRef.attachView(this.ref.hostView)
+        const el = this.ref.location.nativeElement as HTMLElement
+        wrapper.appendChild(el)
+
+        if (contentArea) {
+            this.mountedTo = 'content'
+            contentArea.appendChild(wrapper)
+        } else {
+            this.mountedTo = 'body'
+            document.body.appendChild(wrapper)
+        }
+        this.applyLayout()
+        this.ref.changeDetectorRef.detectChanges()
+    }
+
+    private unmount (): void {
+        if (this.ref) {
+            this.appRef.detachView(this.ref.hostView)
+            this.ref.destroy()
+            this.ref = null
+        }
+        this.wrapper?.remove()
+        this.wrapper = null
+        this.mountedTo = null
+        document.body.classList.remove('tabby-copilot-open', 'tabby-copilot-left', 'tabby-copilot-right')
+        document.getElementById(STYLE_ID)?.remove()
+        this.nudgeResize()
+    }
+
+    private applyLayout (): void {
+        if (!this.wrapper) {
+            return
+        }
+        const body = document.body
+        body.style.setProperty('--copilot-panel-width', `${this.width}px`)
+        this.wrapper.style.fontSize = `${this.fontSize}px`
+        body.classList.add('tabby-copilot-open')
+        body.classList.toggle('tabby-copilot-left', this.side === 'left')
+        body.classList.toggle('tabby-copilot-right', this.side === 'right')
+        let style = document.getElementById(STYLE_ID) as HTMLStyleElement | null
+        if (!style) {
+            style = document.createElement('style')
+            style.id = STYLE_ID
+            document.head.appendChild(style)
+        }
+        const fixed = this.mountedTo === 'body'
+        style.textContent = `
+            .tabby-copilot-wrapper {
+                position: ${fixed ? 'fixed' : 'absolute'};
+                top: 0; bottom: 0;
+                width: var(--copilot-panel-width);
+                z-index: ${fixed ? 1000 : 20};
+                display: flex;
+                background: var(--theme-bg, var(--bs-body-bg, #1e1e1e));
+                color: var(--theme-fg, var(--bs-body-color, #ddd));
+            }
+            body.tabby-copilot-right .tabby-copilot-wrapper { right: 0; border-left: 1px solid var(--theme-bg-more-2, rgba(255,255,255,0.08)); }
+            body.tabby-copilot-left .tabby-copilot-wrapper { left: 0; border-right: 1px solid var(--theme-bg-more-2, rgba(255,255,255,0.08)); }
+            ${fixed ? '' : `
+            body.tabby-copilot-open app-root .content-tab {
+                width: calc(100% - var(--copilot-panel-width)) !important;
+            }
+            body.tabby-copilot-open.tabby-copilot-left app-root .content-tab.content-tab-active {
+                left: var(--copilot-panel-width) !important;
+            }`}
+        `
+        this.nudgeResize()
+    }
+
+    private nudgeResize (): void {
+        setTimeout(() => window.dispatchEvent(new Event('resize')), 30)
+    }
+}
+
+/**
+ * The element that holds Tabby's tab bodies (`.content-tab`). Located by
+ * structure rather than a fixed path so minor template changes keep working.
+ */
+function findTabContentArea (): HTMLElement | null {
+    const tabBody = document.querySelector('app-root .content-tab') as HTMLElement | null
+    if (tabBody?.parentElement) {
+        return tabBody.parentElement
+    }
+    for (const selector of ['app-root .content.main > .content', 'app-root > .content > .content', 'app-root .content > .content']) {
+        const el = document.querySelector(selector) as HTMLElement | null
+        if (el) {
+            return el
+        }
+    }
+    return null
+}

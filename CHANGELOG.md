@@ -2,6 +2,11 @@
 
 所有显著变更都记录于此。版本规则：小功能 `0.0.x` 递增，功能累积升级 `0.x.0`。
 
+## v0.0.2 — 2026-11-23
+
+- 工程脚手架：Tabby 插件骨架（Angular 15 + Webpack 5）、per-Tab 面板挂载、工具栏按钮/热键、设置页。
+- `TerminalRegistryService` + `TerminalDecorator`，建立单 Tab 隔离的地基。
+
 ## v0.0.1 — 2026-11-23
 
 - 重构 PRD 文档至 v3.0（开发向）：确定单 Tab 隔离模型、文件读取差异化、DeepSeek 默认接入、版本路线图与测试策略。
