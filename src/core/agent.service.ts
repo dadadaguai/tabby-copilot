@@ -44,6 +44,8 @@ export class AgentService {
     private pendingQuestion: { toolCallId: string, resolve: (answer: string) => void } | null = null
     private runner: TerminalRunner
     private boundTerminalId: string | null = null
+    private sessions = new Map<string, Session>()
+    private pendingBindId: string | null = null
     private emitTimer: any = null
 
     get state$ (): Observable<AgentState> {
@@ -63,6 +65,7 @@ export class AgentService {
     ) {
         this.session = this.state.value.session
         this.runner = new TerminalRunner(registry)
+        this.registry.activeId$.subscribe(id => this.zone.run(() => this.onActiveTerminal(id)))
     }
 
     get settings (): CopilotConfig {
@@ -98,16 +101,18 @@ export class AgentService {
 
     async newSession (): Promise<Session> {
         await this.stopAndWait()
-        if (isEmptySession(this.session) && !this.session.titleIsCustom) {
-            this.session = createSession()
-            this.boundTerminalId = null
-            this.emit()
-            return this.session
+        this.saveCurrentSessionIfNeeded()
+        const s = createSession()
+        const id = this.boundTerminalId ?? this.registry.getActive()?.id ?? null
+        if (id) {
+            const t = this.registry.byId(id)
+            if (t) {
+                s.terminal = this.registry.describe(t)
+            }
+            this.sessions.set(id, s)
         }
-        this.store.save(this.session)
-        this.session = createSession()
+        this.session = s
         this.error = null
-        this.boundTerminalId = null
         this.emit()
         return this.session
     }
@@ -121,12 +126,18 @@ export class AgentService {
             return false
         }
         await this.stopAndWait()
-        if (!isEmptySession(this.session)) {
-            this.store.save(this.session)
+        this.saveCurrentSessionIfNeeded()
+        const boundId = this.boundTerminalId ?? this.registry.getActive()?.id ?? null
+        if (boundId) {
+            this.sessions.set(boundId, loaded)
         }
         this.session = loaded
         this.error = null
-        this.boundTerminalId = this.matchTerminal(loaded.terminal)
+        this.boundTerminalId = this.matchTerminal(loaded.terminal) ?? boundId
+        const active = this.registry.getActive()
+        if (active) {
+            loaded.terminal = this.registry.describe(active)
+        }
         this.emit()
         return true
     }
@@ -145,11 +156,81 @@ export class AgentService {
         if (id === this.session.id) {
             await this.newSession()
         }
+        for (const [tid, s] of this.sessions) {
+            if (s.id === id) {
+                this.sessions.delete(tid)
+            }
+        }
         this.store.delete(id)
     }
 
     listSessions () {
         return this.store.list()
+    }
+
+    // -------------------------------------------------- per-terminal binding
+
+    private onActiveTerminal (id: string | null): void {
+        if (this.busy) {
+            this.pendingBindId = id
+            return
+        }
+        this.bindTerminalById(id)
+    }
+
+    private bindTerminalById (id: string | null): void {
+        if (id === this.boundTerminalId) {
+            return
+        }
+        this.saveCurrentSessionIfNeeded()
+        this.boundTerminalId = id
+        if (!id) {
+            this.session = createSession()
+            this.error = null
+            this.emit()
+            return
+        }
+        let sess = this.sessions.get(id)
+        if (!sess) {
+            sess = this.findSessionForTerminal(id)
+            this.sessions.set(id, sess)
+        }
+        this.session = sess
+        this.error = null
+        this.emit()
+    }
+
+    private findSessionForTerminal (id: string): Session {
+        const entry = this.registry.byId(id)
+        if (entry) {
+            const desc = this.registry.describe(entry)
+            const inUse = new Set(this.sessions.values())
+            let best: Session | null = null
+            let bestScore = 0
+            for (const s of this.store.scanSessions()) {
+                if (inUse.has(s)) {
+                    continue
+                }
+                const score = matchScore(s.terminal ?? { kind: 'other' }, desc)
+                if (score >= 3 && score > bestScore) {
+                    best = s
+                    bestScore = score
+                }
+            }
+            if (best) {
+                return best
+            }
+            const fresh = createSession()
+            fresh.terminal = desc
+            return fresh
+        }
+        return createSession()
+    }
+
+    private saveCurrentSessionIfNeeded (): void {
+        if (this.session && !isEmptySession(this.session)) {
+            this.store.save(this.session)
+        }
     }
 
     // --------------------------------------------------- send / stop / gates
@@ -164,6 +245,8 @@ export class AgentService {
             this.emit()
             return
         }
+        const active = this.registry.getActive()
+        this.bindTerminalById(active?.id ?? null)
         const user: UserMessage = { id: newId('m'), role: 'user', content, createdAt: nowIso() }
         this.session.messages.push(user)
         this.session.stats.turns++
@@ -171,10 +254,8 @@ export class AgentService {
             this.session.title = autoTitle(this.session)
         }
         this.error = null
-        const active = this.registry.getActive()
         if (active) {
             this.session.terminal = this.registry.describe(active)
-            this.boundTerminalId = active.id
         }
         this.touch()
         this.turnPromise = this.runTurn()
@@ -335,6 +416,11 @@ export class AgentService {
             this.pendingQuestion = null
             this.setPhase('idle')
             this.touch()
+            if (this.pendingBindId !== null) {
+                const next = this.pendingBindId
+                this.pendingBindId = null
+                this.bindTerminalById(next)
+            }
         }
     }
 
