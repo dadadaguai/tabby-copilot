@@ -39,6 +39,16 @@
         }
     }
 
+    select.copilot-input {
+        color: #dfe3e8;
+        background: #2a2e35;
+
+        option {
+            background: #2a2e35;
+            color: #dfe3e8;
+        }
+    }
+
     textarea.copilot-input {
         resize: vertical;
         min-height: 2.4em;

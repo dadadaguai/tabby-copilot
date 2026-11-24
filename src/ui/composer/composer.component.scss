@@ -78,5 +78,10 @@
         }
         .model-select { max-width: 200px; }
         .reasoning-effort { margin-left: auto; }
+
+        .key-hint {
+            color: var(--copilot-warning);
+            font-size: .88em;
+        }
     }
 }

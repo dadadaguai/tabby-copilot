@@ -46,6 +46,22 @@ export class ComposerComponent implements OnInit, OnDestroy {
         return findProvider(this.provider)?.models ?? []
     }
 
+    get providerName (): string {
+        return findProvider(this.provider)?.name ?? this.provider
+    }
+
+    /** Whether the active provider has a key (or is a keyless localhost endpoint). */
+    get providerConfigured (): boolean {
+        const s = this.agent.settings
+        const prov = findProvider(this.provider)
+        const apiKey = s.providerApiKeys?.[this.provider]?.trim() || s.apiKey.trim()
+        if (apiKey) {
+            return true
+        }
+        const baseUrl = s.providerEndpoints?.[this.provider]?.trim() || s.endpoint.trim() || prov?.baseUrl || ''
+        return /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?/i.test(baseUrl)
+    }
+
     get model (): string {
         return this.agent.settings.model || ''
     }

@@ -14,10 +14,11 @@
     <select class="provider-select" [ngModel]="provider" (ngModelChange)="setProvider($event)" title="切换服务商">
       <option *ngFor="let p of providers" [value]="p.id">{{ p.name }}</option>
     </select>
-    <select class="model-select" [ngModel]="model" (ngModelChange)="setModel($event)" title="切换模型">
+    <select *ngIf="providerConfigured" class="model-select" [ngModel]="model" (ngModelChange)="setModel($event)" title="切换模型">
       <option *ngFor="let m of providerModels" [value]="m.id">{{ m.name }}</option>
     </select>
-    <select *ngIf="reasoning && efforts.length" class="reasoning-effort" [ngModel]="reasoningEffort" (ngModelChange)="setReasoningEffort($event)" title="推理强度">
+    <span *ngIf="!providerConfigured" class="key-hint">请先在设置里填 {{ providerName }} 的 API Key</span>
+    <select *ngIf="providerConfigured && reasoning && efforts.length" class="reasoning-effort" [ngModel]="reasoningEffort" (ngModelChange)="setReasoningEffort($event)" title="推理强度">
       <option value="">推理：默认</option>
       <option *ngFor="let e of efforts" [value]="e">推理：{{ effortLabel(e) }}</option>
     </select>
