@@ -5,7 +5,7 @@
   <a href="https://tabby.sh/"><img src="https://img.shields.io/badge/Tabby-plugin-8A2BE2" alt="Tabby plugin"></a>
   <a href="https://www.deepseek.com/"><img src="https://img.shields.io/badge/DeepSeek-OpenAI%20compatible-blue" alt="DeepSeek"></a>
   <a href="https://www.anthropic.com/"><img src="https://img.shields.io/badge/Claude-Anthropic-d97757" alt="Claude"></a>
-  <a href="#测试"><img src="https://img.shields.io/badge/tests-passing-brightgreen" alt="tests"></a>
+  <a href="https://github.com/dadadaguai/tabby-copilot/actions"><img src="https://github.com/dadadaguai/tabby-copilot/actions/workflows/ci.yml/badge.svg" alt="tests"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
 </p>
 
