@@ -1,9 +1,18 @@
 # tabby-copilot
 
+<p align="center">
+  <a href="https://www.npmjs.com/package/tabby-copilot"><img src="https://img.shields.io/npm/v/tabby-copilot" alt="npm version"></a>
+  <a href="https://tabby.sh/"><img src="https://img.shields.io/badge/Tabby-plugin-8A2BE2" alt="Tabby plugin"></a>
+  <a href="https://www.deepseek.com/"><img src="https://img.shields.io/badge/DeepSeek-OpenAI%20compatible-blue" alt="DeepSeek"></a>
+  <a href="https://www.anthropic.com/"><img src="https://img.shields.io/badge/Claude-Anthropic-d97757" alt="Claude"></a>
+  <a href="#测试"><img src="https://img.shields.io/badge/tests-passing-brightgreen" alt="tests"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
+</p>
+
 Tabby 终端原生 AI 副驾驶插件 —— **单 Tab 隔离**的 Pi 式 Agent 内核：内嵌在终端右侧的分屏面板，能自主读终端、跑命令（带审批）、发按键、读文件（受白名单约束），真正干活而非一问一答。
 
 - **UI**：Claude / Codex / DeepSeek 风格的极简线性对话流。
-- **模型**：默认 DeepSeek（`deepseek-chat` / `deepseek-reasoner`），OpenAI 兼容，key 用户自填。
+- **模型**：多服务商支持（DeepSeek / OpenAI / Claude / Gemini / GLM / Qwen / 腾讯混元…），key 各自填写。
 - **隔离**：每个终端 Tab 独立持有会话、屏幕缓冲与文件白名单。
 
 > 参考 [`giejqf/tabby-ai-panel`](https://github.com/giejqf/tabby-ai-panel) 的终端状态机、风险分级、审批模式、上下文预算与会话持久化思路。
@@ -19,7 +28,7 @@ Tabby 终端原生 AI 副驾驶插件 —— **单 Tab 隔离**的 Pi 式 Agent 
 
 ## 状态
 
-**v0.2.4** —— PRD 的 8 个里程碑全部完成。见 [PRD](prd.md) 第 8 节路线图。
+**v0.2.7** —— PRD 的 8 个里程碑全部完成。见 [PRD](prd.md) 第 8 节路线图。
 
 ## 效果预览
 
