@@ -1,18 +1,26 @@
 <div class="copilot-settings">
   <h4>模型连接</h4>
 
-  <div class="form-group" *ngFor="let p of providers">
-    <label>{{ p.name }} API Key</label>
-    <input type="password" class="copilot-input" [(ngModel)]="c.providerApiKeys[p.id]" (ngModelChange)="save()"
-           placeholder="{{ p.apiKeyHint }}" />
-    <div class="hint">{{ p.baseUrl }}</div>
+  <div class="form-group">
+    <label for="copilot-provider">服务商</label>
+    <select id="copilot-provider" class="copilot-input" [(ngModel)]="selectedProvider">
+      <option *ngFor="let p of providers" [value]="p.id">{{ p.name }}</option>
+    </select>
+    <div class="hint">{{ selectedBaseUrl }}</div>
   </div>
 
   <div class="form-group">
-    <label for="copilot-endpoint">Endpoint 覆盖（可选）</label>
-    <input id="copilot-endpoint" type="text" class="copilot-input" [(ngModel)]="c.endpoint" (ngModelChange)="save()"
+    <label>{{ selectedProviderName }} API Key</label>
+    <input type="password" class="copilot-input" [(ngModel)]="c.providerApiKeys[selectedProvider]" (ngModelChange)="save()"
+           placeholder="{{ selectedHint }}" />
+    <div class="hint">只发送到对应服务商，保存在 Tabby 的 config.yaml 中，请勿提交到 git。</div>
+  </div>
+
+  <div class="form-group">
+    <label>Endpoint 覆盖（可选）</label>
+    <input type="text" class="copilot-input" [(ngModel)]="c.providerEndpoints[selectedProvider]" (ngModelChange)="save()"
            placeholder="留空则使用服务商默认地址" />
-    <div class="hint">例如自建代理、或自定义 OpenAI 兼容端点。切换服务商后会自动清空。</div>
+    <div class="hint">例如自建代理或自定义 OpenAI 兼容端点。</div>
   </div>
 
   <div class="form-group">

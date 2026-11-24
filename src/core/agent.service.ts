@@ -75,12 +75,14 @@ export class AgentService {
     }
 
     get configured (): boolean {
-        const prov = findProvider(this.settings.provider)
-        const baseUrl = this.settings.endpoint.trim() || prov?.baseUrl || ''
+        const s = this.settings
+        const prov = findProvider(s.provider)
+        const baseUrl = (s.providerEndpoints?.[s.provider]?.trim()) || s.endpoint.trim() || prov?.baseUrl || ''
         if (!baseUrl) {
             return false
         }
-        if (this.settings.apiKey.trim()) {
+        const apiKey = s.providerApiKeys?.[s.provider]?.trim() || s.apiKey.trim()
+        if (apiKey) {
             return true
         }
         // Keyless local endpoints (e.g. Ollama) are allowed without an API key.
@@ -341,7 +343,8 @@ export class AgentService {
     private makeProvider (): ChatProvider {
         const s = this.settings
         const prov = findProvider(s.provider)
-        const baseUrl = s.endpoint.trim() || prov?.baseUrl || 'https://api.deepseek.com'
+        const baseUrl = (s.providerEndpoints?.[s.provider]?.trim()) || s.endpoint.trim() || prov?.baseUrl || 'https://api.deepseek.com'
+        const apiKey = s.providerApiKeys?.[s.provider]?.trim() || s.apiKey.trim()
         const api = prov?.api ?? 'openai-completions'
         let extra: Record<string, any> = {}
         if (s.extraParamsText.trim()) {
@@ -355,9 +358,9 @@ export class AgentService {
             extra.reasoning_effort = s.reasoningEffort
         }
         if (api === 'anthropic-messages') {
-            return new AnthropicProvider({ endpoint: baseUrl, apiKey: s.apiKey, model: s.model, extraParams: extra })
+            return new AnthropicProvider({ endpoint: baseUrl, apiKey, model: s.model, extraParams: extra })
         }
-        return new OpenAICompatibleProvider({ endpoint: baseUrl, apiKey: s.apiKey, model: s.model, extraParams: extra })
+        return new OpenAICompatibleProvider({ endpoint: baseUrl, apiKey, model: s.model, extraParams: extra })
     }
 
     // --------------------------------------------------------------- the loop

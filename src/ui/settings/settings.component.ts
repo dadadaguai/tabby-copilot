@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core'
 import { ConfigService } from 'tabby-core'
 import { CONFIG_KEY, CopilotConfig, DEFAULT_CONFIG } from '../../types/config'
-import { CATALOG } from '../../core/model-catalog'
+import { CATALOG, findProvider } from '../../core/model-catalog'
 
 @Component({
     selector: 'tabby-copilot-settings',
@@ -10,6 +10,7 @@ import { CATALOG } from '../../core/model-catalog'
 })
 export class CopilotSettingsComponent implements OnInit {
     providers = CATALOG
+    selectedProvider = ''
 
     constructor (public config: ConfigService) {}
 
@@ -19,10 +20,24 @@ export class CopilotSettingsComponent implements OnInit {
             this.config.store[CONFIG_KEY][k] ??= v
         }
         this.config.store[CONFIG_KEY].providerApiKeys ??= {}
+        this.config.store[CONFIG_KEY].providerEndpoints ??= {}
+        this.selectedProvider = this.c.provider || 'deepseek'
     }
 
     get c (): CopilotConfig {
         return this.config.store[CONFIG_KEY]
+    }
+
+    get selectedBaseUrl (): string {
+        return findProvider(this.selectedProvider)?.baseUrl ?? ''
+    }
+
+    get selectedProviderName (): string {
+        return findProvider(this.selectedProvider)?.name ?? ''
+    }
+
+    get selectedHint (): string {
+        return findProvider(this.selectedProvider)?.apiKeyHint ?? ''
     }
 
     setInt (key: keyof CopilotConfig, value: string): void {

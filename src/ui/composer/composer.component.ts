@@ -72,15 +72,7 @@ export class ComposerComponent implements OnInit, OnDestroy {
 
     setProvider (value: string): void {
         const c = this.config.store[CONFIG_KEY] ??= {}
-        const old = c.provider || 'deepseek'
-        if (c.apiKey) {
-            c.providerApiKeys ??= {}
-            c.providerApiKeys[old] = c.apiKey
-        }
         c.provider = value
-        c.providerApiKeys ??= {}
-        c.apiKey = c.providerApiKeys[value] ?? ''
-        c.endpoint = ''
         c.model = findProvider(value)?.models[0]?.id ?? ''
         c.reasoningEffort = ''
         this.config.save()

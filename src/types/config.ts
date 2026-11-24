@@ -10,6 +10,8 @@ export interface CopilotConfig {
     model: string
     /** API keys per provider, persisted so switching back does not lose them. */
     providerApiKeys: Record<string, string>
+    /** Endpoint overrides per provider (empty = use the catalog default). */
+    providerEndpoints: Record<string, string>
     /** Reasoning effort (low/medium/high/max), passed as `reasoning_effort` when set. */
     reasoningEffort: string
     /** JSON-encoded extra request body parameters (temperature, reasoning options…). */
@@ -41,6 +43,7 @@ export const DEFAULT_CONFIG: CopilotConfig = {
     apiKey: '',
     model: 'deepseek-chat',
     providerApiKeys: {},
+    providerEndpoints: {},
     reasoningEffort: '',
     extraParamsText: '',
     additionalSystemPrompt: '',
