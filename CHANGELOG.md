@@ -2,6 +2,10 @@
 
 所有显著变更都记录于此。版本规则：小功能 `0.0.x` 递增，功能累积升级 `0.x.0`。
 
+## v0.2.4 — 2026-11-24
+
+- 修复「Cannot load package info」：`package.json` 补上 `author` 字段。Tabby 插件加载器会读 `info.author.name`，字段缺失会抛异常导致插件无法加载。
+
 ## v0.2.3 — 2026-11-23
 
 - 修复面板挂载后不可见：panel 组件补上 `:host { display: flex; flex: 1 }`，宿主元素不再塌成 0 高。
