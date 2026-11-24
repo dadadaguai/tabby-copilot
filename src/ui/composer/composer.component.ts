@@ -3,6 +3,7 @@ import { Subscription } from 'rxjs'
 import { ConfigService } from 'tabby-core'
 import { AgentService, AgentState } from '../../core/agent.service'
 import { CONFIG_KEY } from '../../types/config'
+import { ApprovalMode } from '../../types/session'
 import { CATALOG, findModel, findProvider } from '../../core/model-catalog'
 
 @Component({
@@ -107,6 +108,14 @@ export class ComposerComponent implements OnInit, OnDestroy {
         this.config.store[CONFIG_KEY] ??= {}
         this.config.store[CONFIG_KEY].reasoningEffort = value
         this.config.save()
+    }
+
+    get approvalMode (): string {
+        return this.agent.session.approvalMode ?? ''
+    }
+
+    setApprovalMode (value: string): void {
+        this.agent.setApprovalMode((value === '' ? '' : value) as ApprovalMode | '')
     }
 
     focus (): void {

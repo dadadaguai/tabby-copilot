@@ -61,7 +61,8 @@
 
         .provider-select,
         .model-select,
-        .reasoning-effort {
+        .reasoning-effort,
+        .approval-mode {
             padding: 4px 6px;
             font: inherit;
             font-size: .95em;
@@ -77,7 +78,7 @@
             }
         }
         .model-select { max-width: 200px; }
-        .reasoning-effort { margin-left: auto; }
+        .approval-mode { margin-left: auto; }
 
         .key-hint {
             color: var(--copilot-warning);
