@@ -6,7 +6,7 @@ Tabby 终端原生 AI 副驾驶插件 —— **单 Tab 隔离**的 Pi 式 Agent 
 - **模型**：默认 DeepSeek（`deepseek-chat` / `deepseek-reasoner`），OpenAI 兼容，key 用户自填。
 - **隔离**：每个终端 Tab 独立持有会话、屏幕缓冲与文件白名单。
 
-> 参考 [`giejqf/tabby-ai-panel`](https://github.com/giejqf/tabby-ai-panel) 的终端状态机、风险分级、审批模式、上下文预算与会话持久化思路（自研，不 fork）。
+> 参考 [`giejqf/tabby-ai-panel`](https://github.com/giejqf/tabby-ai-panel) 的终端状态机、风险分级、审批模式、上下文预算与会话持久化思路。
 
 ## 特性
 
@@ -19,7 +19,11 @@ Tabby 终端原生 AI 副驾驶插件 —— **单 Tab 隔离**的 Pi 式 Agent 
 
 ## 状态
 
-**v0.2.2** —— PRD 的 8 个里程碑全部完成，25 个测试通过（24 单测 + 1 流式冒烟）。见 [PRD](prd.md) 第 8 节路线图。
+**v0.2.4** —— PRD 的 8 个里程碑全部完成。见 [PRD](prd.md) 第 8 节路线图。
+
+## 效果预览
+
+![效果预览](docs/screenshot.png)
 
 ## 快速开始
 
@@ -31,26 +35,37 @@ npm run test         # 单元测试 + 流式冒烟
 npm run preview      # HTML 预览（localhost:8787）
 ```
 
-### 在 Tabby 中安装
+## 安装
 
-用一键脚本（build → npm pack → 装进 Tabby 插件目录）：
+### 前置要求
+
+- **Node.js**（含 npm）。
+
+### 步骤
+
+1. 克隆仓库：
 
 ```powershell
-.\install.ps1
+git clone https://github.com/dadadaguai/tabby-copilot.git
+cd tabby-copilot
 ```
 
-或手动执行（等价）：
+2. 安装依赖并打包成 `.tgz`：
 
 ```powershell
+npm install
 npm run build
-npm pack
+npm pack          # 生成 tabby-copilot-<版本>.tgz
+```
+
+3. 把 `.tgz` 安装到 Tabby 的插件目录（默认 `%APPDATA%\tabby\plugins`）：
+
+```powershell
 cd $env:APPDATA\tabby\plugins
 npm install "<项目路径>\tabby-copilot-<版本>.tgz" --no-audit --no-fund
 ```
 
-> 关键：Tabby 的用户插件是装到 `%APPDATA%\tabby\plugins`（会生成 `node_modules\tabby-copilot`），**不是**用 Tabby 界面的「Install plugin」（那个只认 zip，会留下「Cannot load package info」的坏注册）。
-
-装完**重启 Tabby**；工具栏出现 **Copilot** 按钮，或按 `Ctrl+Alt+A` 打开面板。然后在 **Settings → Copilot** 填写 DeepSeek 的 Endpoint / API Key / Model。
+4. 重启 Tabby，工具栏出现 **Copilot** 按钮（或按 `Ctrl+Alt+A`）。然后在 **Settings → Copilot** 填写 DeepSeek 的 Endpoint / API Key / Model。
 
 ## 架构
 
@@ -81,3 +96,7 @@ src/
 ## 密钥与安全
 
 API key 只保存在 Tabby 的 `config.yaml` 中（或本地预览用的 `.env`，已被 `.gitignore` 忽略），**永不提交进仓库**。参见 `.env.example`。
+
+## 许可证
+
+[MIT](LICENSE)
