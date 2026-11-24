@@ -48,6 +48,11 @@ export class ComposerComponent implements OnInit, OnDestroy {
         return this.agent.settings.reasoningEffort || ''
     }
 
+    /** Whether the current model looks like a reasoning/thinking model. */
+    isReasoningModel (model: string): boolean {
+        return /reason|think|o[0-9]|r1|flash/i.test(model || '')
+    }
+
     setReasoningEffort (value: string): void {
         this.config.store[CONFIG_KEY] ??= {}
         this.config.store[CONFIG_KEY].reasoningEffort = value

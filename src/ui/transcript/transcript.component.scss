@@ -31,6 +31,7 @@
     .msg.user {
         display: flex;
         justify-content: flex-end;
+        min-width: 0;
 
         .bubble {
             max-width: 85%;
@@ -39,10 +40,13 @@
             background: var(--copilot-surface-2);
             white-space: pre-wrap;
             word-break: break-word;
+            overflow-wrap: anywhere;
         }
     }
 
     .msg.assistant {
+        min-width: 0;
+
         .reasoning {
             margin-bottom: 6px;
 

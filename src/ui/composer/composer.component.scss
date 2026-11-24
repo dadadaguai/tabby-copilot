@@ -57,17 +57,23 @@
         align-items: center;
         gap: 8px;
         margin-top: 6px;
-        font-size: .8em;
+        font-size: .95em;
 
         .model-select,
         .reasoning-effort {
-            padding: 2px 4px;
+            padding: 4px 6px;
             font: inherit;
+            font-size: .95em;
             font-family: var(--copilot-mono);
-            color: inherit;
-            background: var(--copilot-surface);
+            color: var(--copilot-fg);
+            background: #2a2e35;
             border: 1px solid var(--copilot-border);
             border-radius: 5px;
+
+            option {
+                background: #2a2e35;
+                color: var(--copilot-fg);
+            }
         }
         .reasoning-effort { margin-left: auto; }
     }

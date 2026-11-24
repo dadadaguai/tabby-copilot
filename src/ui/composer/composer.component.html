@@ -14,7 +14,7 @@
     <select class="model-select" [ngModel]="model" (ngModelChange)="setModel($event)" title="切换模型">
       <option *ngFor="let m of availableModels" [value]="m">{{ m }}</option>
     </select>
-    <select class="reasoning-effort" [ngModel]="reasoningEffort" (ngModelChange)="setReasoningEffort($event)" title="推理强度">
+    <select *ngIf="isReasoningModel(model)" class="reasoning-effort" [ngModel]="reasoningEffort" (ngModelChange)="setReasoningEffort($event)" title="推理强度">
       <option value="">推理：默认</option>
       <option value="low">推理：低</option>
       <option value="medium">推理：中</option>
