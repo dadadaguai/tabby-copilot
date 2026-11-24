@@ -11,14 +11,15 @@
     </button>
   </div>
   <div class="footer">
-    <select class="model-select" [ngModel]="model" (ngModelChange)="setModel($event)" title="切换模型">
-      <option *ngFor="let m of availableModels" [value]="m">{{ m }}</option>
+    <select class="provider-select" [ngModel]="provider" (ngModelChange)="setProvider($event)" title="切换服务商">
+      <option *ngFor="let p of providers" [value]="p.id">{{ p.name }}</option>
     </select>
-    <select *ngIf="isReasoningModel(model)" class="reasoning-effort" [ngModel]="reasoningEffort" (ngModelChange)="setReasoningEffort($event)" title="推理强度">
+    <select class="model-select" [ngModel]="model" (ngModelChange)="setModel($event)" title="切换模型">
+      <option *ngFor="let m of providerModels" [value]="m.id">{{ m.name }}</option>
+    </select>
+    <select *ngIf="reasoning && efforts.length" class="reasoning-effort" [ngModel]="reasoningEffort" (ngModelChange)="setReasoningEffort($event)" title="推理强度">
       <option value="">推理：默认</option>
-      <option value="low">推理：低</option>
-      <option value="medium">推理：中</option>
-      <option value="high">推理：高</option>
+      <option *ngFor="let e of efforts" [value]="e">推理：{{ effortLabel(e) }}</option>
     </select>
   </div>
 </div>

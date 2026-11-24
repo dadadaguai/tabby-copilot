@@ -59,6 +59,7 @@
         margin-top: 6px;
         font-size: .95em;
 
+        .provider-select,
         .model-select,
         .reasoning-effort {
             padding: 4px 6px;
@@ -75,6 +76,7 @@
                 color: var(--copilot-fg);
             }
         }
+        .model-select { max-width: 200px; }
         .reasoning-effort { margin-left: auto; }
     }
 }

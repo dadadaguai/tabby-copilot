@@ -5,6 +5,8 @@ import { CopilotConfig } from '../types/config'
 import { ApprovalMode, AssistantMessage, RunExitState, Session, TerminalDescriptor, ToolCallRecord, UserMessage } from '../types/session'
 import { ChatMessage, ChatProvider, ToolSpec } from './llm/types'
 import { OpenAICompatibleProvider } from './llm/openai-compatible'
+import { AnthropicProvider } from './llm/anthropic'
+import { findProvider } from './model-catalog'
 import { TerminalRunner } from './terminal-runner'
 import { matchScore } from './terminal-descriptor'
 import { TerminalEntry, TerminalRegistryService } from './terminal-registry.service'
@@ -73,15 +75,16 @@ export class AgentService {
     }
 
     get configured (): boolean {
-        const endpoint = this.settings.endpoint.trim()
-        if (!endpoint) {
+        const prov = findProvider(this.settings.provider)
+        const baseUrl = this.settings.endpoint.trim() || prov?.baseUrl || ''
+        if (!baseUrl) {
             return false
         }
         if (this.settings.apiKey.trim()) {
             return true
         }
         // Keyless local endpoints (e.g. Ollama) are allowed without an API key.
-        return /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?/i.test(endpoint)
+        return /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?/i.test(baseUrl)
     }
 
     get approvalMode (): ApprovalMode {
@@ -337,6 +340,9 @@ export class AgentService {
 
     private makeProvider (): ChatProvider {
         const s = this.settings
+        const prov = findProvider(s.provider)
+        const baseUrl = s.endpoint.trim() || prov?.baseUrl || 'https://api.deepseek.com'
+        const api = prov?.api ?? 'openai-completions'
         let extra: Record<string, any> = {}
         if (s.extraParamsText.trim()) {
             try {
@@ -348,7 +354,10 @@ export class AgentService {
         if (s.reasoningEffort) {
             extra.reasoning_effort = s.reasoningEffort
         }
-        return new OpenAICompatibleProvider({ endpoint: s.endpoint, apiKey: s.apiKey, model: s.model, extraParams: extra })
+        if (api === 'anthropic-messages') {
+            return new AnthropicProvider({ endpoint: baseUrl, apiKey: s.apiKey, model: s.model, extraParams: extra })
+        }
+        return new OpenAICompatibleProvider({ endpoint: baseUrl, apiKey: s.apiKey, model: s.model, extraParams: extra })
     }
 
     // --------------------------------------------------------------- the loop

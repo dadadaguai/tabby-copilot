@@ -2,6 +2,13 @@
 
 所有显著变更都记录于此。版本规则：小功能 `0.0.x` 递增，功能累积升级 `0.x.0`。
 
+## v0.2.7 — 2026-11-24
+
+- 多服务商支持：内置模型目录（DeepSeek / OpenAI / Claude / Gemini / GLM / opencode / Qwen / 腾讯混元），Composer 可按服务商切换模型。
+- 新增 Anthropic 客户端（Claude Messages API），推理强度映射为 thinking 预算。
+- 推理强度改为按模型能力显示（每个模型定义支持的档位）。
+- 设置页改为各服务商独立 API Key + Endpoint 覆盖。
+
 ## v0.2.6 — 2026-11-24
 
 - UI 修复：会话内容真正换行（flex 子项 `min-width: 0`）、代码块按钮在窄面板不再被裁剪、Composer 选择器深色背景 + 白字 + 更大字号、推理强度只在推理模型下显示。

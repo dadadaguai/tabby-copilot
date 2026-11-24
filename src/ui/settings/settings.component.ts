@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core'
 import { ConfigService } from 'tabby-core'
 import { CONFIG_KEY, CopilotConfig, DEFAULT_CONFIG } from '../../types/config'
+import { CATALOG } from '../../core/model-catalog'
 
 @Component({
     selector: 'tabby-copilot-settings',
@@ -8,6 +9,8 @@ import { CONFIG_KEY, CopilotConfig, DEFAULT_CONFIG } from '../../types/config'
     styleUrls: ['./settings.component.scss'],
 })
 export class CopilotSettingsComponent implements OnInit {
+    providers = CATALOG
+
     constructor (public config: ConfigService) {}
 
     ngOnInit (): void {
@@ -15,6 +18,7 @@ export class CopilotSettingsComponent implements OnInit {
         for (const [k, v] of Object.entries(DEFAULT_CONFIG)) {
             this.config.store[CONFIG_KEY][k] ??= v
         }
+        this.config.store[CONFIG_KEY].providerApiKeys ??= {}
     }
 
     get c (): CopilotConfig {

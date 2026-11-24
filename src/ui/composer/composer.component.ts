@@ -2,8 +2,8 @@ import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/co
 import { Subscription } from 'rxjs'
 import { ConfigService } from 'tabby-core'
 import { AgentService, AgentState } from '../../core/agent.service'
-import { ModelCatalogService } from '../../core/model-catalog.service'
 import { CONFIG_KEY } from '../../types/config'
+import { CATALOG, findModel, findProvider } from '../../core/model-catalog'
 
 @Component({
     selector: 'copilot-composer',
@@ -14,18 +14,16 @@ export class ComposerComponent implements OnInit, OnDestroy {
     @ViewChild('textarea') textarea?: ElementRef<HTMLTextAreaElement>
     draft = ''
     state!: AgentState
-    availableModels: string[] = ['deepseek-chat', 'deepseek-reasoner']
+    providers = CATALOG
     private sub = new Subscription()
 
     constructor (
         public agent: AgentService,
         private config: ConfigService,
-        private catalog: ModelCatalogService,
     ) {}
 
     ngOnInit (): void {
         this.sub.add(this.agent.state$.subscribe(s => { this.state = s }))
-        void this.loadModels()
     }
 
     ngOnDestroy (): void {
@@ -40,51 +38,66 @@ export class ComposerComponent implements OnInit, OnDestroy {
         return !this.busy && this.draft.trim().length > 0 && this.agent.configured
     }
 
+    get provider (): string {
+        return this.agent.settings.provider || 'deepseek'
+    }
+
+    get providerModels () {
+        return findProvider(this.provider)?.models ?? []
+    }
+
     get model (): string {
-        return this.agent.settings.model || 'deepseek-chat'
+        return this.agent.settings.model || ''
+    }
+
+    get currentModel () {
+        return findModel(this.provider, this.model)
+    }
+
+    get reasoning (): boolean {
+        return this.currentModel?.reasoning ?? false
+    }
+
+    get efforts (): string[] {
+        return this.currentModel?.efforts ?? []
     }
 
     get reasoningEffort (): string {
         return this.agent.settings.reasoningEffort || ''
     }
 
-    /** Whether the current model looks like a reasoning/thinking model. */
-    isReasoningModel (model: string): boolean {
-        return /reason|think|o[0-9]|r1|flash/i.test(model || '')
+    effortLabel (e: string): string {
+        return ({ low: '低', medium: '中', high: '高', xhigh: '更高', max: '最高' } as Record<string, string>)[e] ?? e
     }
 
-    setReasoningEffort (value: string): void {
-        this.config.store[CONFIG_KEY] ??= {}
-        this.config.store[CONFIG_KEY].reasoningEffort = value
+    setProvider (value: string): void {
+        const c = this.config.store[CONFIG_KEY] ??= {}
+        const old = c.provider || 'deepseek'
+        if (c.apiKey) {
+            c.providerApiKeys ??= {}
+            c.providerApiKeys[old] = c.apiKey
+        }
+        c.provider = value
+        c.providerApiKeys ??= {}
+        c.apiKey = c.providerApiKeys[value] ?? ''
+        c.endpoint = ''
+        c.model = findProvider(value)?.models[0]?.id ?? ''
+        c.reasoningEffort = ''
         this.config.save()
-    }
-
-    async loadModels (): Promise<void> {
-        let extra: string[] = []
-        try {
-            extra = await this.catalog.list()
-        } catch {
-            // catalog fetch is best-effort; keep the defaults
-        }
-        const merged = [...this.availableModels]
-        for (const m of extra) {
-            if (!merged.includes(m)) {
-                merged.push(m)
-            }
-        }
-        const current = this.agent.settings.model
-        if (current && !merged.includes(current)) {
-            merged.unshift(current)
-        }
-        this.availableModels = merged
     }
 
     setModel (value: string): void {
         if (!value) {
             return
         }
-        this.config.store[CONFIG_KEY] ??= {}
         this.config.store[CONFIG_KEY].model = value
+        this.config.store[CONFIG_KEY].reasoningEffort = ''
+        this.config.save()
+    }
+
+    setReasoningEffort (value: string): void {
+        this.config.store[CONFIG_KEY] ??= {}
+        this.config.store[CONFIG_KEY].reasoningEffort = value
         this.config.save()
     }
 

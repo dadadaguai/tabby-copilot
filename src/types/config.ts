@@ -3,10 +3,14 @@ import { ApprovalMode } from './session'
 export type PanelSide = 'left' | 'right'
 
 export interface CopilotConfig {
+    /** Active provider id (see model-catalog.ts). */
+    provider: string
     endpoint: string
     apiKey: string
     model: string
-    /** Reasoning effort (low/medium/high), passed as `reasoning_effort` when set. */
+    /** API keys per provider, persisted so switching back does not lose them. */
+    providerApiKeys: Record<string, string>
+    /** Reasoning effort (low/medium/high/max), passed as `reasoning_effort` when set. */
     reasoningEffort: string
     /** JSON-encoded extra request body parameters (temperature, reasoning options…). */
     extraParamsText: string
@@ -32,9 +36,11 @@ export interface CopilotConfig {
 export const CONFIG_KEY = 'tabbyCopilot'
 
 export const DEFAULT_CONFIG: CopilotConfig = {
+    provider: 'deepseek',
     endpoint: 'https://api.deepseek.com',
     apiKey: '',
     model: 'deepseek-chat',
+    providerApiKeys: {},
     reasoningEffort: '',
     extraParamsText: '',
     additionalSystemPrompt: '',
