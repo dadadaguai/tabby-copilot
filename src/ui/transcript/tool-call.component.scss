@@ -52,6 +52,8 @@
         flex-direction: column;
         gap: 6px;
 
+        > * { min-width: 0; }
+
         .tc-command code {
             font-family: var(--copilot-mono);
             font-size: .85em;
@@ -131,6 +133,7 @@
                 font-size: .82em;
                 white-space: pre-wrap;
                 word-break: break-word;
+                overflow-wrap: anywhere;
                 max-height: 260px;
                 overflow-y: auto;
             }
