@@ -80,22 +80,20 @@ export class TranscriptComponent implements OnInit, OnDestroy {
         const code = block?.querySelector('pre code')?.textContent ?? ''
         event.preventDefault()
         event.stopPropagation()
-        if (button.dataset.action === 'copy') {
+        const action = button.dataset.action
+        if (action === 'copy') {
             void this.copyCode(code)
-            const original = button.textContent
-            button.textContent = 'Copied'
-            setTimeout(() => { button.textContent = original }, 1200)
-        } else if (button.dataset.action === 'fill') {
+        } else if (action === 'fill') {
             this.fill.emit(code)
-        } else if (button.dataset.action === 'run') {
-            const target = this.registry.getActive()
-            if (target) {
-                this.registry.sendInput(target, code)
-                const original = button.textContent
-                button.textContent = 'Sent'
-                setTimeout(() => { button.textContent = original }, 1200)
+        } else if (action === 'run' || action === 'execute') {
+            const t = this.registry.getActive()
+            if (t) {
+                const data = action === 'execute' ? code.replace(/\n$/, '') + '\r' : code
+                this.registry.sendInput(t, data)
             }
         }
+        button.classList.add('done')
+        setTimeout(() => button.classList.remove('done'), 900)
     }
 
     private async copyCode (code: string): Promise<void> {

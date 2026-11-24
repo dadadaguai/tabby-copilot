@@ -3,7 +3,6 @@ import { Subscription } from 'rxjs'
 import { ConfigService } from 'tabby-core'
 import { AgentService, AgentState } from '../../core/agent.service'
 import { ModelCatalogService } from '../../core/model-catalog.service'
-import { ApprovalMode } from '../../types/session'
 import { CONFIG_KEY } from '../../types/config'
 
 @Component({
@@ -45,16 +44,14 @@ export class ComposerComponent implements OnInit, OnDestroy {
         return this.agent.settings.model || 'deepseek-chat'
     }
 
-    get approvalMode (): string {
-        return this.agent.session.approvalMode ?? ''
+    get reasoningEffort (): string {
+        return this.agent.settings.reasoningEffort || ''
     }
 
-    setApprovalMode (value: string): void {
-        this.agent.setApprovalMode((value === '' ? '' : value) as ApprovalMode | '')
-    }
-
-    get tokens (): number {
-        return (this.state?.session.stats.promptTokens ?? 0) + (this.state?.session.stats.completionTokens ?? 0)
+    setReasoningEffort (value: string): void {
+        this.config.store[CONFIG_KEY] ??= {}
+        this.config.store[CONFIG_KEY].reasoningEffort = value
+        this.config.save()
     }
 
     async loadModels (): Promise<void> {

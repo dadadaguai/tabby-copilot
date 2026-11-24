@@ -2,21 +2,23 @@
 // .tabby-copilot-wrapper so nothing leaks into Tabby's own UI.
 
 .tabby-copilot-wrapper {
-    --copilot-bg: var(--theme-bg, var(--bs-body-bg, #1b1e23));
-    --copilot-fg: var(--theme-fg, var(--bs-body-color, #dfe3e8));
+    // 固定深色主题，避免 Tabby 主题变量未定义时出现白底白字看不清
+    --copilot-bg: #1b1e23;
+    --copilot-fg: #dfe3e8;
     --copilot-surface: rgba(127, 127, 127, 0.10);
     --copilot-surface-2: rgba(127, 127, 127, 0.18);
     --copilot-surface-3: rgba(127, 127, 127, 0.26);
     --copilot-border: rgba(127, 127, 127, 0.28);
-    --copilot-accent: var(--theme-primary, var(--bs-primary, #4d9be6));
-    --copilot-danger: var(--theme-danger, var(--bs-danger, #e5484d));
-    --copilot-warning: var(--theme-warning, var(--bs-warning, #f5a524));
-    --copilot-success: var(--theme-success, var(--bs-success, #3ecf8e));
-    --copilot-info: var(--theme-info, var(--bs-info, #58a6ff));
-    --copilot-mono: var(--bs-font-monospace, "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace);
+    --copilot-accent: #4d9be6;
+    --copilot-danger: #e5484d;
+    --copilot-warning: #f5a524;
+    --copilot-success: #3ecf8e;
+    --copilot-info: #58a6ff;
+    --copilot-mono: "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
 
-    font-family: var(--bs-body-font-family, system-ui, -apple-system, "Segoe UI", sans-serif);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
     color: var(--copilot-fg);
+    background: var(--copilot-bg);
 
     * { box-sizing: border-box; }
 
@@ -25,6 +27,9 @@
     .markdown {
         line-height: 1.6;
         word-break: break-word;
+        overflow-wrap: anywhere;
+        user-select: text;
+        -webkit-user-select: text;
 
         > :first-child { margin-top: 0; }
         > :last-child { margin-bottom: 0; }
@@ -52,9 +57,15 @@
             padding: 10px 12px;
             border-radius: 6px;
             background: var(--copilot-surface);
-            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-wrap: anywhere;
 
-            code { font-family: var(--copilot-mono); font-size: .88em; }
+            code {
+                font-family: var(--copilot-mono);
+                font-size: .88em;
+                white-space: pre-wrap;
+            }
         }
         table { border-collapse: collapse; margin: 0 0 10px; }
         th, td { border: 1px solid var(--copilot-border); padding: 5px 9px; }
@@ -70,6 +81,7 @@
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
+                gap: 6px;
                 padding: 4px 8px;
                 background: var(--copilot-surface);
                 border-bottom: 1px solid var(--copilot-border);
@@ -80,17 +92,25 @@
                     text-transform: uppercase;
                     letter-spacing: .04em;
                 }
+                .code-actions-right { display: flex; gap: 2px; }
                 .code-action {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 28px;
+                    height: 24px;
                     border: none;
                     background: transparent;
                     color: inherit;
-                    opacity: .7;
-                    font-size: .8em;
+                    opacity: .75;
+                    font-size: .85em;
                     cursor: pointer;
-                    padding: 2px 6px;
+                    padding: 0;
                     border-radius: 4px;
+                    user-select: none;
 
                     &:hover { opacity: 1; background: var(--copilot-surface-2); }
+                    &.done { opacity: 1; color: var(--copilot-success); }
                 }
             }
             pre { margin: 0; border-radius: 0; background: transparent; }

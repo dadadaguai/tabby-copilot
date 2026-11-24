@@ -345,6 +345,9 @@ export class AgentService {
                 // invalid JSON is ignored
             }
         }
+        if (s.reasoningEffort) {
+            extra.reasoning_effort = s.reasoningEffort
+        }
         return new OpenAICompatibleProvider({ endpoint: s.endpoint, apiKey: s.apiKey, model: s.model, extraParams: extra })
     }
 

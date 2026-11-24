@@ -10,6 +10,8 @@
     min-height: 0;
     overflow-y: auto;
     padding: 14px 14px 8px;
+    user-select: text;
+    -webkit-user-select: text;
 
     .transcript-content {
         display: flex;

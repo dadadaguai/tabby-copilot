@@ -6,6 +6,8 @@ export interface CopilotConfig {
     endpoint: string
     apiKey: string
     model: string
+    /** Reasoning effort (low/medium/high), passed as `reasoning_effort` when set. */
+    reasoningEffort: string
     /** JSON-encoded extra request body parameters (temperature, reasoning options…). */
     extraParamsText: string
     additionalSystemPrompt: string
@@ -33,6 +35,7 @@ export const DEFAULT_CONFIG: CopilotConfig = {
     endpoint: 'https://api.deepseek.com',
     apiKey: '',
     model: 'deepseek-chat',
+    reasoningEffort: '',
     extraParamsText: '',
     additionalSystemPrompt: '',
     approvalMode: 'ask',

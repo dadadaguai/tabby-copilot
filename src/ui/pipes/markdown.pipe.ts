@@ -11,12 +11,17 @@ const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
 renderer.code = (code: string, infostring: string | undefined): string => {
     const lang = (infostring ?? '').trim().split(/\s+/)[0]
     const langAttr = lang ? ` data-lang="${escapeHtml(lang)}"` : ''
+    const btn = (action: string, icon: string, title: string): string =>
+        `<button type="button" class="code-action" data-action="${action}" title="${title}"><i class="fas ${icon}"></i></button>`
     return `<div class="code-block"${langAttr}>` +
         `<div class="code-actions">` +
-        (lang ? `<span class="code-lang">${escapeHtml(lang)}</span>` : '') +
-        `<button type="button" class="code-action" data-action="run" title="投递到当前终端（不回车）">▶</button>` +
-        `<button type="button" class="code-action" data-action="fill" title="填入输入框">✎</button>` +
-        `<button type="button" class="code-action" data-action="copy" title="Copy">Copy</button>` +
+        (lang ? `<span class="code-lang">${escapeHtml(lang)}</span>` : '<span></span>') +
+        `<span class="code-actions-right">` +
+        btn('run', 'fa-terminal', '发送至终端') +
+        btn('execute', 'fa-play', '执行') +
+        btn('fill', 'fa-pen', '发送至输入框') +
+        btn('copy', 'fa-copy', '复制') +
+        `</span>` +
         `</div><pre><code>${escapeHtml(code)}</code></pre></div>`
 }
 renderer.link = (href: string, title: string | null | undefined, text: string): string => {

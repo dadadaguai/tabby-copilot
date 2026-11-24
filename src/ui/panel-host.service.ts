@@ -214,8 +214,8 @@ export class PanelHostService {
                 width: var(--copilot-panel-width);
                 z-index: ${fixed ? 1000 : 20};
                 display: flex;
-                background: var(--theme-bg, var(--bs-body-bg, #1e1e1e));
-                color: var(--theme-fg, var(--bs-body-color, #ddd));
+                background: var(--copilot-bg, #1b1e23);
+                color: var(--copilot-fg, #dfe3e8);
             }
             body.tabby-copilot-right .tabby-copilot-wrapper { right: 0; border-left: 1px solid var(--theme-bg-more-2, rgba(255,255,255,0.08)); }
             body.tabby-copilot-left .tabby-copilot-wrapper { left: 0; border-right: 1px solid var(--theme-bg-more-2, rgba(255,255,255,0.08)); }
