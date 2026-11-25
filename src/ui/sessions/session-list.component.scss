@@ -1,6 +1,7 @@
 :host {
     display: block;
     flex: none;
+    min-width: 0;
     border-bottom: 1px solid var(--copilot-border);
     background: var(--copilot-surface);
 }
@@ -27,6 +28,7 @@
     }
 
     .sl-item {
+        min-width: 0;
         padding: 7px 9px;
         border-radius: 6px;
         cursor: pointer;
