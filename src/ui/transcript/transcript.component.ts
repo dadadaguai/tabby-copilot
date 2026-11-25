@@ -3,6 +3,7 @@ import { Subscription } from 'rxjs'
 import { AgentService, AgentState } from '../../core/agent.service'
 import { TerminalRegistryService } from '../../core/terminal-registry.service'
 import { AssistantMessage, SessionMessage } from '../../types/session'
+import { showToast } from '../toast'
 
 @Component({
     selector: 'copilot-transcript',
@@ -105,6 +106,7 @@ export class TranscriptComponent implements OnInit, OnDestroy {
         const text = sel.toString()
         if (text && navigator.clipboard) {
             navigator.clipboard.writeText(text).catch(() => {})
+            showToast('已复制')
         }
     }
 

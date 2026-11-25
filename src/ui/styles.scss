@@ -121,4 +121,23 @@
             pre { margin: 0; border-radius: 0; background: transparent; }
         }
     }
+
+    .copilot-toast {
+        position: absolute;
+        top: 56px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 5px 12px;
+        border-radius: 6px;
+        background: var(--copilot-surface-3);
+        color: var(--copilot-fg);
+        font-size: .85em;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity .15s ease;
+        z-index: 30;
+
+        &.visible { opacity: 1; }
+    }
 }

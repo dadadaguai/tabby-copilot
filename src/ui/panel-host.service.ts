@@ -24,6 +24,7 @@ export class PanelHostService {
     private width = DEFAULT_CONFIG.panelWidth
     private side: PanelSide = 'right'
     private fontSize = DEFAULT_CONFIG.fontSize
+    private footerMinWidth = 0
 
     constructor (
         private appRef: ApplicationRef,
@@ -89,13 +90,27 @@ export class PanelHostService {
 
     /** Live width while dragging (not persisted). */
     setWidth (px: number): void {
-        const max = Math.max(MIN_WIDTH, Math.floor(window.innerWidth * 0.8))
-        this.width = Math.max(MIN_WIDTH, Math.min(max, Math.round(px)))
+        const min = Math.max(MIN_WIDTH, this.footerMinWidth)
+        const max = Math.max(min, Math.floor(window.innerWidth * 0.8))
+        this.width = Math.max(min, Math.min(max, Math.round(px)))
         this.applyLayout()
     }
 
     commitWidth (): void {
         this.persist({ panelWidth: this.width })
+    }
+
+    /** The panel must stay wide enough for the composer footer to sit on one line. */
+    setFooterMinWidth (px: number): void {
+        const min = Math.max(MIN_WIDTH, Math.ceil(px))
+        if (min === this.footerMinWidth) {
+            return
+        }
+        this.footerMinWidth = min
+        if (this.width < min) {
+            this.width = min
+            this.applyLayout()
+        }
     }
 
     get currentWidth (): number {
@@ -133,7 +148,7 @@ export class PanelHostService {
 
     private readConfig (): void {
         const c = this.config.store?.[CONFIG_KEY] ?? {}
-        this.width = Math.max(MIN_WIDTH, c.panelWidth ?? DEFAULT_CONFIG.panelWidth)
+        this.width = Math.max(this.footerMinWidth || MIN_WIDTH, c.panelWidth ?? DEFAULT_CONFIG.panelWidth)
         this.side = c.panelSide === 'left' ? 'left' : 'right'
         const font = Number(c.fontSize)
         this.fontSize = Number.isFinite(font) && font >= 9 && font <= 24 ? font : DEFAULT_CONFIG.fontSize

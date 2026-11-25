@@ -1,26 +1,31 @@
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core'
+import { AfterViewChecked, AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core'
 import { Subscription } from 'rxjs'
 import { ConfigService } from 'tabby-core'
 import { AgentService, AgentState } from '../../core/agent.service'
 import { CONFIG_KEY } from '../../types/config'
 import { ApprovalMode } from '../../types/session'
 import { CATALOG, findModel, findProvider } from '../../core/model-catalog'
+import { PanelHostService } from '../panel-host.service'
+import { showToast } from '../toast'
 
 @Component({
     selector: 'copilot-composer',
     templateUrl: './composer.component.html',
     styleUrls: ['./composer.component.scss'],
 })
-export class ComposerComponent implements OnInit, OnDestroy {
+export class ComposerComponent implements OnInit, OnDestroy, AfterViewInit, AfterViewChecked {
     @ViewChild('textarea') textarea?: ElementRef<HTMLTextAreaElement>
     draft = ''
     state!: AgentState
     providers = CATALOG
     private sub = new Subscription()
+    private footerMinWidth = 0
+    private measureScheduled = false
 
     constructor (
         public agent: AgentService,
         private config: ConfigService,
+        private host: PanelHostService,
     ) {}
 
     ngOnInit (): void {
@@ -174,6 +179,7 @@ export class ComposerComponent implements OnInit, OnDestroy {
         const text = ta.value.substring(start, end)
         if (text && navigator.clipboard) {
             navigator.clipboard.writeText(text).catch(() => {})
+            showToast('已复制')
         }
     }
 
@@ -206,5 +212,48 @@ export class ComposerComponent implements OnInit, OnDestroy {
         ta.setSelectionRange(caret, caret)
         this.onInput()
         ta.focus()
+    }
+
+    ngAfterViewInit (): void {
+        this.reportFooterMinWidth()
+    }
+
+    ngAfterViewChecked (): void {
+        if (this.measureScheduled) {
+            return
+        }
+        this.measureScheduled = true
+        requestAnimationFrame(() => {
+            this.measureScheduled = false
+            this.reportFooterMinWidth()
+        })
+    }
+
+    /** Report the panel's minimum width so the composer footer stays on one line. */
+    private reportFooterMinWidth (): void {
+        const composer = this.textarea?.nativeElement?.closest('.composer') as HTMLElement | null
+        const footer = composer?.querySelector('.footer') as HTMLElement | null
+        if (!composer || !footer) {
+            return
+        }
+        const children = Array.from(footer.children) as HTMLElement[]
+        if (!children.length) {
+            return
+        }
+        let width = 0
+        const gap = parseFloat(getComputedStyle(footer).columnGap) || 0
+        for (let i = 0; i < children.length; i++) {
+            width += children[i].getBoundingClientRect().width
+            if (i > 0) {
+                width += gap
+            }
+        }
+        const cs = getComputedStyle(composer)
+        width += (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0)
+        const min = Math.ceil(width)
+        if (min !== this.footerMinWidth) {
+            this.footerMinWidth = min
+            this.host.setFooterMinWidth(min)
+        }
     }
 }
