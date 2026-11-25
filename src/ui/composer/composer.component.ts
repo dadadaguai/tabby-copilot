@@ -250,7 +250,8 @@ export class ComposerComponent implements OnInit, OnDestroy, AfterViewInit, Afte
         }
         const cs = getComputedStyle(composer)
         width += (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0)
-        const min = Math.ceil(width)
+        // a little breathing room so sub-pixel rounding never wraps the last control
+        const min = Math.ceil(width + 12)
         if (min !== this.footerMinWidth) {
             this.footerMinWidth = min
             this.host.setFooterMinWidth(min)
