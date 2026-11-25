@@ -159,4 +159,52 @@ export class ComposerComponent implements OnInit, OnDestroy {
         ta.style.height = 'auto'
         ta.style.height = ta.scrollHeight ? `${Math.min(ta.scrollHeight, 180)}px` : ''
     }
+
+    /** 终端式选择即复制：在输入框里拖动选中文本后松开即复制。 */
+    onSelectCopy (): void {
+        const ta = this.textarea?.nativeElement
+        if (!ta) {
+            return
+        }
+        const start = ta.selectionStart ?? 0
+        const end = ta.selectionEnd ?? start
+        if (end <= start) {
+            return
+        }
+        const text = ta.value.substring(start, end)
+        if (text && navigator.clipboard) {
+            navigator.clipboard.writeText(text).catch(() => {})
+        }
+    }
+
+    /** 终端式右键粘贴。 */
+    onContextMenu (event: MouseEvent): void {
+        event.preventDefault()
+        void this.pasteAtCursor()
+    }
+
+    private async pasteAtCursor (): Promise<void> {
+        let text: string
+        try {
+            text = await navigator.clipboard.readText()
+        } catch {
+            return
+        }
+        if (!text) {
+            return
+        }
+        const ta = this.textarea?.nativeElement
+        if (!ta) {
+            return
+        }
+        const start = ta.selectionStart ?? this.draft.length
+        const end = ta.selectionEnd ?? start
+        const next = ta.value.slice(0, start) + text + ta.value.slice(end)
+        this.draft = next
+        ta.value = next
+        const caret = start + text.length
+        ta.setSelectionRange(caret, caret)
+        this.onInput()
+        ta.focus()
+    }
 }

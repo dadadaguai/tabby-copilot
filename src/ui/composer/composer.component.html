@@ -1,6 +1,7 @@
 <div class="composer">
   <div class="input-row" [class.busy]="busy">
     <textarea #textarea rows="1" [(ngModel)]="draft" (input)="onInput()" (keydown)="onKeydown($event)"
+              (mouseup)="onSelectCopy()" (contextmenu)="onContextMenu($event)"
               [placeholder]="busy ? 'Copilot 正在思考…' : '让 Copilot 帮你干活…（Enter 发送，Shift+Enter 换行）'"
               spellcheck="false"></textarea>
     <button class="send-btn" type="button" *ngIf="!busy" [disabled]="!canSend" (click)="send()" title="发送 (Enter)">

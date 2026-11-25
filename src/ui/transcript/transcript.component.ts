@@ -96,6 +96,18 @@ export class TranscriptComponent implements OnInit, OnDestroy {
         setTimeout(() => button.classList.remove('done'), 900)
     }
 
+    /** 终端式选择即复制：选中会话内容松开鼠标即复制到剪贴板。 */
+    onMouseUp (): void {
+        const sel = window.getSelection()
+        if (!sel || sel.isCollapsed) {
+            return
+        }
+        const text = sel.toString()
+        if (text && navigator.clipboard) {
+            navigator.clipboard.writeText(text).catch(() => {})
+        }
+    }
+
     private async copyCode (code: string): Promise<void> {
         try {
             await navigator.clipboard.writeText(code)

@@ -1,6 +1,6 @@
 {
   "name": "tabby-copilot",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "Per-tab AI copilot panel for Tabby: a Pi-style agent that reads the terminal, runs commands with approval, and reads files within a per-tab whitelist. Supports DeepSeek, OpenAI, Claude, Gemini, GLM, Qwen and more.",
   "author": "liangjd <liangjunda@rogon.cn>",
   "keywords": [

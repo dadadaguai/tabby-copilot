@@ -1,4 +1,4 @@
-<div #scroller class="transcript" (scroll)="onScroll()" (click)="onClick($event)">
+<div #scroller class="transcript" (scroll)="onScroll()" (mouseup)="onMouseUp()" (click)="onClick($event)">
   <div class="transcript-content">
     <div class="empty" *ngIf="!messages.length">
       <div class="empty-title">和 Copilot 对话</div>
