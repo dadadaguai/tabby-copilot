@@ -55,6 +55,7 @@
     .footer {
         display: flex;
         align-items: center;
+        flex-wrap: wrap;
         gap: 8px;
         margin-top: 6px;
         font-size: .95em;
@@ -63,6 +64,8 @@
         .model-select,
         .reasoning-effort,
         .approval-mode {
+            min-width: 0;
+            max-width: 100%;
             padding: 4px 6px;
             font: inherit;
             font-size: .95em;
@@ -81,6 +84,7 @@
         .approval-mode { margin-left: auto; }
 
         .key-hint {
+            min-width: 0;
             color: var(--copilot-warning);
             font-size: .88em;
         }

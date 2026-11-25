@@ -43,6 +43,9 @@
                 font-weight: 600;
                 font-size: 1.05em;
                 line-height: 1.2;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
             .subtitle {
                 font-size: .82em;
